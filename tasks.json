@@ -1,0 +1,23 @@
+{
+  "updated": "2026-11-16T12:40:00+02:00",
+  "tasks": [
+    {"id":"no3",   "title":"Test NO3",            "kind":"test", "param":"no3", "days":1, "note":"morning, before dosing"},
+    {"id":"kno3",  "title":"Dose KNO3",           "kind":"every","days":1, "last":"2026-11-16", "note":"10 mL while NO3 ~1.5"},
+    {"id":"temp",  "title":"Check temperature",   "kind":"test", "param":"temp"},
+    {"id":"po4",   "title":"Test PO4",            "kind":"test", "param":"po4"},
+    {"id":"alk",   "title":"Test KH",             "kind":"test", "param":"alk"},
+    {"id":"sal",   "title":"Check salinity",      "kind":"test", "param":"sal"},
+    {"id":"ca",    "title":"Test Ca",             "kind":"test", "param":"ca"},
+    {"id":"mg",    "title":"Test Mg",             "kind":"test", "param":"mg"},
+    {"id":"nh3",   "title":"Test NH4",            "kind":"test", "param":"nh3"},
+    {"id":"tds",   "title":"Check RODI TDS",      "kind":"test", "param":"tds"},
+    {"id":"wc",    "title":"90 L water change",   "kind":"weekly","weekday":6, "note":"3.1 kg Ocean Knight · test PO4, NO3, KH, salinity first"},
+    {"id":"cu",    "title":"Retest copper",       "kind":"once", "due":"2026-11-21", "param":"cu", "after":"2026-11-15", "note":"before adding shrimp/snails"},
+    {"id":"dino-torch", "title":"Night torch check of sand patches", "kind":"once", "due":"2026-11-16", "note":"dinos vanish at lights-off"},
+    {"id":"siphon","title":"Siphon brown strands off sand", "kind":"every", "days":2, "last":"2026-11-15", "note":"don't stir the sand"},
+    {"id":"torch-coral", "title":"Check the struggling torch frags", "kind":"once", "due":"2026-11-16"},
+    {"id":"fan",   "title":"Fit hygger fan to sump (STC cooling)", "kind":"once", "due":"2026-11-16"},
+    {"id":"uv",    "title":"Decide on UV Stage 1", "kind":"once", "due":"2026-11-17", "note":"on hold while dinos suspected"},
+    {"id":"carbon","title":"Change Reef Spec carbon", "kind":"once", "due":"2026-11-27"}
+  ]
+}
