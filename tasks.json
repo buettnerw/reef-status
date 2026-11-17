@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-17T09:33:00+02:00",
+  "updated": "2026-11-17T09:49:00+02:00",
   "tasks": [
     {
       "id": "no3",
@@ -107,8 +107,8 @@
       "id": "uv",
       "title": "Decide on UV Stage 1",
       "kind": "once",
-      "due": "2026-11-21",
-      "note": "on hold while brown film on sand"
+      "due": "2026-11-20",
+      "note": "only if corals OK with new flow, NO3 ≥ 2, brown film not spreading"
     },
     {
       "id": "carbon",
