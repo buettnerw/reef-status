@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-17T09:18:00+02:00",
+  "updated": "2026-11-17T09:33:00+02:00",
   "tasks": [
     {
       "id": "no3",
@@ -102,13 +102,6 @@
       "kind": "once",
       "due": "2026-11-18",
       "note": "before the 30–32 °C days Thu/Fri"
-    },
-    {
-      "id": "flow-up",
-      "title": "Raise wavemaker: night 30→40%, UnifHigh 40→60%",
-      "kind": "once",
-      "due": "2026-11-19",
-      "note": "only if corals are happy with the new position"
     },
     {
       "id": "uv",
