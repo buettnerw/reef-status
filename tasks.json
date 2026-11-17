@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-17T09:17:00+02:00",
+  "updated": "2026-11-17T09:18:00+02:00",
   "tasks": [
     {
       "id": "no3",
@@ -90,13 +90,6 @@
       "note": "don't stir the sand"
     },
     {
-      "id": "wavemaker",
-      "title": "Lay ReefWave flat on end glass",
-      "kind": "once",
-      "due": "2026-11-17",
-      "note": "8–10 cm below surface, aim slightly up over the rocks · smooth the sand trench"
-    },
-    {
       "id": "torch-coral",
       "title": "Check the struggling torch frags",
       "kind": "once",
@@ -109,6 +102,13 @@
       "kind": "once",
       "due": "2026-11-18",
       "note": "before the 30–32 °C days Thu/Fri"
+    },
+    {
+      "id": "flow-up",
+      "title": "Raise wavemaker: night 30→40%, UnifHigh 40→60%",
+      "kind": "once",
+      "due": "2026-11-19",
+      "note": "only if corals are happy with the new position"
     },
     {
       "id": "uv",
