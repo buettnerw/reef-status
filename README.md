@@ -16,3 +16,11 @@ When new readings are logged, update the matching entries in `latest.json`: set 
 - `BalanceWidget.js` – Scriptable script for a LARGE widget: Ca vs Alk chart with target box, "snow" zone (moves with Mg), trail of past tests and the Mg:Ca gauge. Uses `balance.history` in latest.json.
 
 Updating (for Claude): add new jobs to `tasks.json`, delete finished `once` jobs, and set `last` on `every` jobs when Werner reports doing them (e.g. KNO3 dosing). Keep `note` short (shown on the large widget).
+
+## More widgets (Scriptable)
+- `NutrientWidget.js` – LARGE/MEDIUM: nitrate vs phosphate chart with target box, "dino corner" and your trail.
+- `DoseWidget.js` – SMALL: today's KNO3 dose from this morning's nitrate (target-4 rule), and whether it's been dosed.
+- `ForecastWidget.js` – MEDIUM/LARGE: straight-line forecasts – days until alk hits 8.5, PO4 reaches 0.10 (warns if it falls >0.05/day), NO3 reaches 4.
+- `LockWidget.js` – lock screen: rectangular summary, inline line, or circular gauge (Parameter: no3, po4, alk, ca, mg, temp).
+
+Data: `series` (recent tests, filled by `sync_series.py`) and `dose.kno3` (last dose) in latest.json.
