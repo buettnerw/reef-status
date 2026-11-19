@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Reef Orb">
+<meta name="theme-color" content="#030b14">
+<link rel="apple-touch-icon" href="icon.png">
+<title>Reef Health Orb</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* The orb is a night-dive scene, so the page stays deep-ocean dark in both themes. */
+:root{--bg:#030b14;--panel:rgba(10,30,48,.66);--line:rgba(110,220,255,.18);--fg:#eaf7ff;--muted:#8fb0c4;
+ --green:#39ff9c;--amber:#ffd23f;--red:#ff4f6d;--cyan:#3fe0ff;--pink:#ff4fd8;color-scheme:dark}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#030b14}}
+:root[data-theme="dark"]{--bg:#030b14}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 "IBM Plex Mono",ui-monospace,monospace}
+#sea{position:fixed;inset:0;width:100%;height:100%;z-index:0}
+.wrap{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:max(20px,env(safe-area-inset-top)) 16px 48px;display:flex;flex-direction:column;gap:14px}
+.eyebrow{font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--cyan);text-shadow:0 0 8px var(--cyan)}
+h1{margin:2px 0 0;font:700 clamp(1.8rem,6vw,2.6rem)/1.05 "Space Grotesk",system-ui,sans-serif;text-shadow:0 0 14px rgba(255,79,216,.75),0 0 34px rgba(63,224,255,.45)}
+.sub{color:var(--muted);font-size:.85rem;margin:6px 0 0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;backdrop-filter:blur(6px);box-shadow:inset 0 0 22px rgba(63,224,255,.06)}
+#orbBox{position:relative;width:100%;max-width:620px;margin:0 auto;aspect-ratio:1}
+#orb{width:100%;height:100%;display:block;cursor:pointer;touch-action:manipulation}
+.tl{display:flex;flex-direction:column;gap:8px}
+.tlrow{display:flex;align-items:center;gap:10px}
+.tlrow button{flex:none;font:600 .85rem "IBM Plex Mono",monospace;color:#08101c;background:var(--cyan);border:0;border-radius:999px;padding:8px 14px;cursor:pointer;box-shadow:0 0 14px rgba(63,224,255,.6)}
+.tlrow button:focus-visible,input[type=range]:focus-visible{outline:2px solid var(--pink);outline-offset:3px}
+input[type=range]{flex:1;min-width:0;accent-color:var(--pink)}
+.day{font-weight:500;min-width:6.5em;text-align:right;text-shadow:0 0 8px rgba(63,224,255,.6)}
+.marks{position:relative;height:14px;margin:0 2px 0 calc(64px + 10px);margin-right:calc(6.5em + 10px)}
+.marks i{position:absolute;top:2px;width:10px;height:10px;margin-left:-5px;border-radius:50%;background:var(--pink);box-shadow:0 0 8px var(--pink)}
+.event{min-height:1.5em;font-size:.85rem;color:var(--pink);text-shadow:0 0 8px rgba(255,79,216,.5)}
+.detail{display:grid;grid-template-columns:1fr auto;gap:4px 14px;align-items:center}
+.detail h2{margin:0;font:700 1.25rem "Space Grotesk",system-ui,sans-serif}
+.detail .big{font-size:1.6rem;font-weight:500;text-align:right}
+.detail .meta{color:var(--muted);font-size:.8rem}
+.detail svg{grid-column:1/-1;width:100%;height:70px;display:block}
+.list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.list button{all:unset;cursor:pointer;display:flex;justify-content:space-between;gap:8px;align-items:center;padding:8px 10px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid var(--line);font-size:.85rem}
+.list button:focus-visible{outline:2px solid var(--pink)}
+.list button.sel{border-color:var(--cyan);box-shadow:0 0 12px rgba(63,224,255,.35)}
+.list .sw{width:10px;height:10px;border-radius:50%;flex:none;box-shadow:0 0 8px currentColor}
+.list .nm{flex:1;display:flex;gap:8px;align-items:center}
+.how{color:var(--muted);font-size:.8rem;line-height:1.6}
+.how b{color:var(--fg)}
+</style></head><body>
+<canvas id="sea" aria-hidden="true"></canvas>
+<div class="wrap">
+ <header>
+  <div class="eyebrow">850 L reef · night dive</div>
+  <h1>Reef Health Orb</h1>
+  <p class="sub">Each glass tube is one test, filled with the colour of its test kit. The coral polyp in the middle opens when the reef is happy.</p>
+ </header>
+ <div class="card">
+  <div id="orbBox"><canvas id="orb" role="img" aria-label="Reef health orb"></canvas></div>
+  <div class="tl">
+   <div class="tlrow"><button id="play" type="button">▶ Story</button><input id="slider" type="range" min="0" max="1" value="1" aria-label="Day"><span class="day" id="day"></span></div>
+   <div class="marks" id="marks"></div>
+   <div class="event" id="event" aria-live="polite"></div>
+  </div>
+ </div>
+ <div class="card detail" id="detail"></div>
+ <div class="card"><div class="list" id="list"></div></div>
+ <div class="card how">
+  <b>How to read it.</b> A tube is <b>full</b> when that test sits inside its target. It drains as the value drifts towards the warning limits and is <b>empty</b> past them. The glass rim glows <b style="color:var(--green)">green</b>, <b style="color:var(--amber)">amber</b> or <b style="color:var(--red)">red</b>; red tubes crack and leak. A <b>frosted</b> tube means the test is overdue, so trust it less.<br>
+  <b>The polyp</b> scores the whole reef: 70% the average of all tubes (temperature, ammonia, nitrate, phosphate and alkalinity count extra), 30% the worst tube, because one bad parameter can hurt a reef on its own. High score: tentacles fully out and swaying. Low score: pulled in and twitching.<br>
+  <b>Story</b> replays every test since 19 October.
+ </div>
+</div>
+<script>
+const DATA = {"series":{"alk":[[1792442100000,9.5,0],[1792593540000,9.8,0],[1792861140000,10.0,0],[1792921860000,10.3,0],[1793088000000,10.2,0],[1793532360000,10.7,0],[1793800500000,10.9,0],[1793870100000,10.5,0],[1794036000000,10.9,0],[1794217500000,10.5,0],[1794475200000,10.0,0],[1794638400000,10.2,0],[1794905100000,10.05,0]],"ca":[[1792442100000,380.0,0],[1792593540000,380.0,0],[1792923600000,420.0,0],[1793088000000,420.0,0],[1793801100000,390.0,0],[1794217920000,420.0,0],[1794841980000,420.0,0]],"po4":[[1792442100000,0.08,1],[1792593540000,0.08,1],[1792923600000,0.08,1],[1793292000000,0.28,0],[1793526000000,0.24,0],[1793612100000,0.21,0],[1793696400000,0.28,0],[1793788500000,0.28,0],[1793867400000,0.26,0],[1793947800000,0.2,0],[1794033600000,0.18,0],[1794126000000,0.2,0],[1794210000000,0.24,0],[1794294000000,0.25,0],[1794376200000,0.28,0],[1794465000000,0.28,0],[1794554100000,0.28,0],[1794634800000,0.24,0],[1794736800000,0.2,0],[1794818400000,0.2,0],[1794899400000,0.2,0],[1794985200000,0.18,0],[1795078320000,0.16,0]],"mg":[[1792593540000,1120.0,0],[1792923600000,1410.0,0],[1793282400000,1400.0,0],[1794221400000,1400.0,0],[1794841080000,1410.0,0]],"tds":[[1792658460000,10.0,0],[1793447400000,2.0,0],[1794475500000,1.0,0]],"sal":[[1793455500000,35.0,0],[1793460600000,34.5,0],[1793887200000,35.0,0],[1793968800000,35.0,0],[1794036000000,35.0,0],[1794150720000,35.0,0],[1794475500000,35.0,0],[1794639000000,35.0,0],[1794994500000,35.0,0]],"nh3":[[1793533200000,0.0,0],[1794222600000,0.0,0],[1794473100000,0.0,0],[1795085700000,0.0,0]],"no3":[[1793538300000,0.0,0],[1793614500000,0.0,0],[1793863200000,0.0,0],[1793896200000,0.5,0],[1793948700000,1.5,0],[1794034800000,2.0,0],[1794124200000,2.5,0],[1794210000000,2.5,0],[1794295800000,3.0,0],[1794385800000,2.0,0],[1794472200000,1.5,0],[1794566400000,1.5,0],[1794635700000,1.5,0],[1794728700000,1.5,0],[1794822600000,1.5,0],[1794897900000,2.0,0],[1794989400000,2.0,0],[1795078200000,3.0,0]],"temp":[[1793722800000,24.9,0],[1794150720000,25.4,0],[1794213600000,24.7,0],[1794293400000,24.9,0],[1794376800000,25.3,0],[1794568920000,25.4,0],[1794639000000,25.4,0],[1794733440000,25.4,0],[1794830400000,25.9,0],[1794841980000,25.4,0],[1794910560000,25.4,0],[1795001460000,25.4,0],[1795086000000,25.3,0]],"cu":[[1794657000000,0,0]]},"events":[{"t":1794470400000,"txt":"Corroded brass valves found \u00b7 downpipes changed \u00b7 carbon added"},{"t":1794641400000,"txt":"Saturday water change"},{"t":1794843000000,"txt":"Wavemaker moved and turned up"},{"t":1794943800000,"txt":"Mantis reactor with PhosBond started"},{"t":1794990480000,"txt":"New nitrate rule: aim for 4"},{"t":1795078200000,"txt":"Nitrate up to 3 \u00b7 old bottle reactor out"}]};
+const P = [
+ {k:"temp",n:"Temp",u:"°C",lo:24.8,hi:26.5,yl:24,yh:27.5,d:1,rt:1,w:1.5,c:"#ff8a4c",kit:"Thermometer"},
+ {k:"sal",n:"Salinity",u:"ppt",lo:34.5,hi:35.5,yl:34,yh:36,d:1,rt:4,w:1,c:"#3fe0ff",kit:"Refractometer"},
+ {k:"alk",n:"KH",u:"dKH",lo:8.5,hi:11,yl:8,yh:12,d:1,rt:3,w:1.5,c:"#7c6cff",kit:"Salifert KH Profi"},
+ {k:"ca",n:"Ca",u:"ppm",lo:400,hi:450,yl:380,yh:470,d:0,rt:7,w:1,c:"#e6f3ff",kit:"NT Labs"},
+ {k:"mg",n:"Mg",u:"ppm",lo:1300,hi:1450,yl:1250,yh:1500,d:0,rt:7,w:1,c:"#c084fc",kit:"NT Labs"},
+ {k:"no3",n:"NO3",u:"ppm",lo:2,hi:5,yl:1,yh:10,d:1,rt:2,w:1.5,c:"#ff4fd8",kit:"Salifert"},
+ {k:"po4",n:"PO4",u:"ppm",lo:0.03,hi:0.1,yl:0.02,yh:0.2,d:2,rt:2,w:1.5,c:"#3fa9ff",kit:"NT Labs, diluted ×4"},
+ {k:"nh3",n:"NH4",u:"ppm",lo:0,hi:0.05,yl:0,yh:0.15,d:2,rt:7,w:1.5,c:"#d8f05a",kit:"Salifert"},
+ {k:"cu",n:"Copper",u:"ppm",lo:0,hi:0.05,yl:0,yh:0.1,d:2,rt:14,w:1,c:"#2fe8b0",kit:"Copper kit"},
+ {k:"tds",n:"RODI TDS",u:"ppm",lo:0,hi:2,yl:0,yh:5,d:0,rt:7,w:0.5,c:"#a9bcd8",kit:"TDS meter"}
+].filter(p=>DATA.series[p.k]&&DATA.series[p.k].length);
+const EVENTS = DATA.events;
+const DAY=864e5, TZ=2*3600e3;
+const dayOf=ms=>Math.floor((ms+TZ)/DAY);
+const d0=Math.min(...P.map(p=>dayOf(DATA.series[p.k][0][0]))), d1=Math.max(dayOf(Date.now()),...P.map(p=>dayOf(DATA.series[p.k].at(-1)[0])));
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// ---------- scoring ----------
+function score(p,v,gt){
+  if(gt) v=Math.max(v,p.yh);
+  if(v>=p.lo&&v<=p.hi) return 100;
+  const d=v<p.lo?(p.lo-v)/Math.max(1e-9,p.lo-p.yl):(v-p.hi)/Math.max(1e-9,p.yh-p.hi);
+  return d<=1?100-60*d:Math.max(0,40-40*(d-1));
+}
+const band=s=>s>=70?"g":s>=40?"y":"r";
+const BC={g:"#39ff9c",y:"#ffd23f",r:"#ff4f6d"};
+function stateAt(day){
+  const out={};
+  P.forEach(p=>{
+    const pts=DATA.series[p.k].filter(q=>dayOf(q[0])<=day);
+    if(!pts.length){out[p.k]=null;return}
+    const [t,v,gt]=pts.at(-1);
+    const age=day-dayOf(t);
+    out[p.k]={v,gt,t,age,s:score(p,v,gt),frost:Math.max(0,Math.min(1,(age-p.rt)/(p.rt*2+1))),hist:pts};
+  });
+  const known=P.filter(p=>out[p.k]);
+  const wsum=known.reduce((a,p)=>a+p.w,0)||1;
+  const avg=known.reduce((a,p)=>a+p.w*out[p.k].s,0)/wsum;
+  const worst=known.length?Math.min(...known.map(p=>out[p.k].s)):0;
+  out.overall=known.length?Math.round(0.7*avg+0.3*worst):0;
+  return out;
+}
+const fmt=(p,v)=>Number(v).toFixed(p.d);
+const dateStr=day=>new Date(day*DAY).toLocaleDateString("en-ZA",{day:"numeric",month:"short",timeZone:"UTC"});
+
+// ---------- ui ----------
+const $=id=>document.getElementById(id);
+const slider=$("slider"); slider.min=d0; slider.max=d1; slider.value=d1;
+let day=d1, sel=P.findIndex(p=>p.k==="no3"); if(sel<0)sel=0;
+let S=stateAt(day);
+const shown={}; P.forEach(p=>shown[p.k]=S[p.k]?S[p.k].s:0); let shownOverall=S.overall;
+$("marks").innerHTML=EVENTS.map(e=>`<i style="left:${(dayOf(e.t)-d0)/(d1-d0)*100}%" title="${e.txt}"></i>`).join("");
+
+function spark(p,st){
+  const h=st.hist; if(h.length<2) return "";
+  const W=600,H=70,vs=h.map(q=>q[2]?Math.max(q[1],p.yh):q[1]);
+  let a=Math.min(p.lo,...vs),b=Math.max(p.hi,...vs);const pad=(b-a)*.15||1;a-=pad;b+=pad;
+  const t0=h[0][0],t1=h.at(-1)[0]||t0+1,X=t=>6+(t-t0)/Math.max(1,t1-t0)*(W-12),Y=v=>4+(1-(v-a)/(b-a))*(H-8);
+  return `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" aria-label="${p.n} history"><rect x="0" y="${Y(p.hi)}" width="${W}" height="${Math.max(1,Y(p.lo)-Y(p.hi))}" fill="rgba(57,255,156,.12)"/><polyline fill="none" stroke="${p.c}" stroke-width="2.5" vector-effect="non-scaling-stroke" points="${h.map((q,i)=>X(q[0])+","+Y(vs[i])).join(" ")}" style="filter:drop-shadow(0 0 4px ${p.c})"/><circle cx="${X(h.at(-1)[0])}" cy="${Y(vs.at(-1))}" r="4" fill="${p.c}"/></svg>`;
+}
+function renderUI(){
+  $("day").textContent=dateStr(day)+(day===dayOf(Date.now())?" · now":"");
+  const ev=EVENTS.filter(e=>dayOf(e.t)===day);
+  $("event").textContent=ev.length?"◆ "+ev.map(e=>e.txt).join(" · "):"";
+  const p=P[sel],st=S[p.k];
+  $("detail").innerHTML=st?`<div><h2 style="color:${p.c};text-shadow:0 0 10px ${p.c}">${p.n}</h2><div class="meta">target ${fmt(p,p.lo)}–${fmt(p,p.hi)} ${p.u} · ${p.kit}</div><div class="meta">tested ${st.age===0?"that day":st.age+" day"+(st.age>1?"s":"")+" before"}${st.frost>0?" · <span style='color:var(--amber)'>overdue, tube frosted</span>":""}</div></div><div><div class="big" style="color:${BC[band(st.s)]}">${st.gt?"&gt;":""}${fmt(p,st.v)}</div><div class="meta" style="text-align:right">score ${Math.round(st.s)}</div></div>${spark(p,st)}`
+    :`<div><h2>${p.n}</h2><div class="meta">not tested yet on this day</div></div>`;
+  $("list").innerHTML=P.map((q,i)=>{const s=S[q.k];return `<button type="button" data-i="${i}" class="${i===sel?"sel":""}"><span class="nm"><span class="sw" style="color:${q.c};background:${q.c}"></span>${q.n}</span><span style="color:${s?BC[band(s.s)]:"var(--muted)"}">${s?(s.gt?"&gt;":"")+fmt(q,s.v):"—"}</span></button>`}).join("");
+}
+$("list").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;sel=+b.dataset.i;renderUI()});
+function setDay(d){day=d;slider.value=d;S=stateAt(day);renderUI()}
+slider.addEventListener("input",()=>{stop();setDay(+slider.value)});
+let playing=null;
+function stop(){if(playing){clearInterval(playing);playing=null;$("play").textContent="▶ Story"}}
+$("play").addEventListener("click",()=>{
+  if(playing){stop();return}
+  $("play").textContent="❚❚ Pause";
+  let d=day>=d1?d0:day; setDay(d);
+  playing=setInterval(()=>{d++;if(d>d1){stop();return}setDay(d)},reduce?250:650);
+});
+
+// ---------- background sea ----------
+const sea=$("sea"),sx=sea.getContext("2d");
+let snow=[];
+function sizeSea(){const r=devicePixelRatio||1;sea.width=innerWidth*r;sea.height=innerHeight*r;sx.setTransform(r,0,0,r,0,0);
+  snow=Array.from({length:Math.round(innerWidth*innerHeight/9000)},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:Math.random()*1.6+.3,v:Math.random()*.25+.05,c:Math.random()<.15?"255,79,216":"140,230,255"}))}
+sizeSea();addEventListener("resize",sizeSea);
+function drawSea(t){
+  const W=innerWidth,H=innerHeight;
+  const g=sx.createLinearGradient(0,0,0,H);g.addColorStop(0,"#06243a");g.addColorStop(.5,"#041422");g.addColorStop(1,"#02070d");
+  sx.fillStyle=g;sx.fillRect(0,0,W,H);
+  sx.globalCompositeOperation="lighter";
+  for(let i=0;i<4;i++){
+    const x=W*(.15+.25*i)+Math.sin(t*.0002+i*1.7)*W*.06;
+    const rg=sx.createLinearGradient(x,0,x+W*.1,H*.8);rg.addColorStop(0,"rgba(63,224,255,.07)");rg.addColorStop(1,"rgba(63,224,255,0)");
+    sx.fillStyle=rg;sx.beginPath();sx.moveTo(x-30,0);sx.lineTo(x+40,0);sx.lineTo(x+W*.18,H*.85);sx.lineTo(x+W*.02,H*.85);sx.fill();
+  }
+  snow.forEach(s=>{if(!reduce){s.y+=s.v;s.x+=Math.sin(t*.001+s.y*.02)*.15;if(s.y>H+4){s.y=-4;s.x=Math.random()*W}}
+    sx.fillStyle=`rgba(${s.c},.55)`;sx.beginPath();sx.arc(s.x,s.y,s.r,0,7);sx.fill()});
+  sx.globalCompositeOperation="source-over";
+}
+
+// ---------- the orb ----------
+const cv=$("orb"),cx=cv.getContext("2d");
+let W=600;
+function sizeOrb(){const r=devicePixelRatio||1,b=$("orbBox").getBoundingClientRect();W=b.width;cv.width=W*r;cv.height=W*r;cx.setTransform(r,0,0,r,0,0)}
+sizeOrb();addEventListener("resize",sizeOrb);
+const N=P.length, GAP=0.07;
+const seg=i=>{const span=Math.PI*2/N;const a0=-Math.PI/2+i*span+GAP/2;return [a0,a0+span-GAP]};
+const bubbles=P.map(()=>Array.from({length:7},()=>({f:Math.random(),v:Math.random()*.0012+.0006,o:(Math.random()-.5)*.5})));
+const drops=P.map(()=>[]);
+const zoox=Array.from({length:70},()=>({a:Math.random()*7,r:Math.random(),v:(Math.random()*.6+.4)*(Math.random()<.5?1:-1),s:Math.random()*1.4+.6}));
+const rgba=(hex,a)=>{const n=parseInt(hex.slice(1),16);return `rgba(${n>>16},${n>>8&255},${n&255},${a})`};
+
+cv.addEventListener("click",e=>{
+  const b=cv.getBoundingClientRect(),x=e.clientX-b.left-W/2,y=e.clientY-b.top-W/2,r=Math.hypot(x,y);
+  const R=W*.34;if(r<R*.72||r>R*1.32)return;
+  let a=Math.atan2(y,x);
+  for(let i=0;i<N;i++){const [a0,a1]=seg(i);let aa=a;while(aa<a0)aa+=Math.PI*2;if(aa<=a1+.05){sel=i;renderUI();return}}
+});
+
+function drawOrb(t){
+  const c=W/2,R=W*.34,T=Math.max(10,W*.042);
+  cx.clearRect(0,0,W,W);
+  // ease the tube levels towards their target
+  P.forEach(p=>{const tgt=S[p.k]?S[p.k].s:0;shown[p.k]+=(tgt-shown[p.k])*(reduce?1:.08)});
+  shownOverall+=(S.overall-shownOverall)*(reduce?1:.06);
+  const ov=shownOverall, ovb=band(ov), ovc=BC[ovb];
+
+  // halo
+  const halo=cx.createRadialGradient(c,c,R*.2,c,c,R*1.5);halo.addColorStop(0,rgba(ovc,.18));halo.addColorStop(.6,rgba("#3fe0ff",.05));halo.addColorStop(1,"rgba(0,0,0,0)");
+  cx.fillStyle=halo;cx.fillRect(0,0,W,W);
+
+  // ----- tubes -----
+  P.forEach((p,i)=>{
+    const [a0,a1]=seg(i),st=S[p.k],s=shown[p.k],b=st?band(st.s):"r",rim=BC[b];
+    const af=a0+(a1-a0)*Math.max(0,Math.min(1,s/100));
+    cx.lineCap="round";
+    // glass
+    cx.strokeStyle="rgba(180,235,255,.08)";cx.lineWidth=T;cx.beginPath();cx.arc(c,c,R,a0,a1);cx.stroke();
+    cx.shadowColor=rim;cx.shadowBlur=i===sel?18:8;
+    cx.strokeStyle=rgba(rim,i===sel?.95:.55);cx.lineWidth=1.6;
+    cx.beginPath();cx.arc(c,c,R+T/2,a0,a1);cx.stroke();cx.beginPath();cx.arc(c,c,R-T/2,a0,a1);cx.stroke();
+    cx.shadowBlur=0;
+    // liquid
+    if(s>0.5){
+      cx.shadowColor=p.c;cx.shadowBlur=16;
+      cx.strokeStyle=rgba(p.c,.85);cx.lineWidth=T*.62;cx.beginPath();cx.arc(c,c,R,a0,af);cx.stroke();
+      cx.shadowBlur=0;cx.strokeStyle="rgba(255,255,255,.35)";cx.lineWidth=T*.12;cx.beginPath();cx.arc(c,c,R+T*.14,a0,af);cx.stroke();
+      // bubbles
+      if(!reduce)bubbles[i].forEach(bb=>{bb.f+=bb.v*(b==="g"?1:b==="y"?.5:.25);if(bb.f>1)bb.f=0;
+        const a=a0+(af-a0)*bb.f,rr=R+bb.o*T*.5;cx.fillStyle="rgba(255,255,255,.75)";cx.beginPath();cx.arc(c+rr*Math.cos(a),c+rr*Math.sin(a),T*.07,0,7);cx.fill()});
+      // pulsing tip when low
+      if(st&&st.s<40){const pr=T*.35*(1+.4*Math.sin(t*.008));cx.fillStyle=rgba(BC.r,.8);cx.shadowColor=BC.r;cx.shadowBlur=20;cx.beginPath();cx.arc(c+R*Math.cos(af),c+R*Math.sin(af),pr,0,7);cx.fill();cx.shadowBlur=0}
+    }
+    // red tube: crack + leaking drops
+    if(st&&b==="r"){
+      const am=(a0+a1)/2,px=c+(R+T/2)*Math.cos(am),py=c+(R+T/2)*Math.sin(am);
+      cx.strokeStyle="rgba(255,255,255,.7)";cx.lineWidth=1.2;cx.beginPath();cx.moveTo(px,py);
+      cx.lineTo(px-T*.25*Math.sin(am)-T*.2*Math.cos(am),py+T*.25*Math.cos(am)-T*.2*Math.sin(am));cx.lineTo(px-T*.05*Math.sin(am)-T*.45*Math.cos(am),py+T*.05*Math.cos(am)-T*.45*Math.sin(am));cx.stroke();
+      if(!reduce&&Math.random()<.04)drops[i].push({x:px,y:py,vx:Math.cos(am)*.6,vy:Math.sin(am)*.6,l:1});
+    }
+    drops[i]=drops[i].filter(d=>{d.x+=d.vx;d.y+=d.vy+=.03;d.l-=.012;cx.fillStyle=rgba(p.c,d.l);cx.beginPath();cx.arc(d.x,d.y,T*.1,0,7);cx.fill();return d.l>0});
+    // frost when overdue
+    if(st&&st.frost>0){cx.strokeStyle=`rgba(225,240,255,${.45*st.frost})`;cx.lineWidth=T;cx.setLineDash([2,3]);cx.beginPath();cx.arc(c,c,R,a0,a1);cx.stroke();cx.setLineDash([])}
+    // label
+    const am=(a0+a1)/2,lr=R+T*.5+W*.05,lx=c+lr*Math.cos(am),ly=c+lr*Math.sin(am);
+    const fs=Math.max(10,W*.022);
+    cx.textAlign=Math.cos(am)>.25?"left":Math.cos(am)<-.25?"right":"center";cx.textBaseline="middle";
+    cx.font=`700 ${fs}px "Space Grotesk",system-ui,sans-serif`;cx.fillStyle=i===sel?"#ffffff":"rgba(234,247,255,.85)";
+    cx.shadowColor=p.c;cx.shadowBlur=8;cx.fillText(p.n,lx,ly-fs*.6);cx.shadowBlur=0;
+    cx.font=`500 ${fs*.92}px "IBM Plex Mono",monospace`;cx.fillStyle=st?rim:"rgba(143,176,196,.8)";
+    cx.fillText(st?(st.gt?">":"")+fmt(p,st.v):"—",lx,ly+fs*.6);
+  });
+
+  // ----- the polyp -----
+  const rc=R*.42, ext=Math.max(.12,ov/100), stress=ov<40;
+  const nT=16;
+  cx.lineCap="round";
+  for(let k=0;k<nT;k++){
+    const base=k/nT*Math.PI*2+t*.00008;
+    const sway=reduce?0:Math.sin(t*.0012+k*.9)*.22*ext+(stress?Math.sin(t*.03+k)*.05:0);
+    const L=rc*(.25+.75*ext)*(1+.08*Math.sin(t*.002+k*2));
+    const bx=c+rc*.92*Math.cos(base),by=c+rc*.92*Math.sin(base);
+    const tx=c+(rc+L)*Math.cos(base+sway),ty=c+(rc+L)*Math.sin(base+sway);
+    const mx=c+(rc+L*.55)*Math.cos(base-sway*.6),my=c+(rc+L*.55)*Math.sin(base-sway*.6);
+    cx.shadowColor=ovc;cx.shadowBlur=12;
+    cx.strokeStyle=rgba(ovc,.55);cx.lineWidth=rc*.13;cx.beginPath();cx.moveTo(bx,by);cx.quadraticCurveTo(mx,my,tx,ty);cx.stroke();
+    cx.strokeStyle="rgba(255,255,255,.35)";cx.lineWidth=rc*.035;cx.beginPath();cx.moveTo(bx,by);cx.quadraticCurveTo(mx,my,tx,ty);cx.stroke();
+    cx.fillStyle=rgba(ovc,.95);cx.beginPath();cx.arc(tx,ty,rc*.085,0,7);cx.fill();
+    cx.shadowBlur=0;
+  }
+  // body
+  const body=cx.createRadialGradient(c-rc*.3,c-rc*.35,rc*.1,c,c,rc);
+  body.addColorStop(0,"rgba(255,255,255,.55)");body.addColorStop(.35,rgba(ovc,.45));body.addColorStop(1,"rgba(4,20,34,.92)");
+  cx.fillStyle=body;cx.shadowColor=ovc;cx.shadowBlur=30;cx.beginPath();cx.arc(c,c,rc,0,7);cx.fill();cx.shadowBlur=0;
+  // zooxanthellae swirling inside
+  zoox.forEach(z=>{if(!reduce)z.a+=z.v*.004*(.3+ov/100);const rr=rc*.85*Math.sqrt(z.r);
+    cx.fillStyle=`rgba(220,255,160,${.35+.4*ov/100})`;cx.beginPath();cx.arc(c+rr*Math.cos(z.a),c+rr*Math.sin(z.a),z.s,0,7);cx.fill()});
+  // score
+  cx.textAlign="center";cx.textBaseline="middle";
+  cx.font=`700 ${rc*.62}px "Space Grotesk",system-ui,sans-serif`;cx.fillStyle="#fff";cx.shadowColor=ovc;cx.shadowBlur=18;
+  cx.fillText(Math.round(ov),c,c-rc*.06);cx.shadowBlur=0;
+  cx.font=`500 ${Math.max(9,rc*.15)}px "IBM Plex Mono",monospace`;cx.fillStyle="rgba(234,247,255,.85)";
+  cx.fillText(ov>=70?"reef happy":ov>=40?"watch":"stressed",c,c+rc*.42);
+}
+
+function frame(t){drawSea(t);drawOrb(t);requestAnimationFrame(frame)}
+renderUI();requestAnimationFrame(frame);
+</script>
+</body></html>
