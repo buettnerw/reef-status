@@ -3,6 +3,18 @@
   "updated": "2026-11-18T13:31:00+02:00",
   "last_water_change": "2026-11-14T09:34:00+02:00",
   "log_url": "https://claude.ai/artifact/Ejz9Rf1nbTKYYWLkFnZYtD",
+  "balance": {
+  "note": "Ca/Alk pairs for BalanceWidget.js; add one when Ca or Alk is tested",
+  "history": [
+    {"at":"2026-10-19","alk":9.5,"ca":380},
+    {"at":"2026-10-21","alk":9.8,"ca":380},
+    {"at":"2026-10-25","alk":10.3,"ca":420},
+    {"at":"2026-10-27","alk":10.2,"ca":420},
+    {"at":"2026-11-04","alk":10.9,"ca":390},
+    {"at":"2026-11-09","alk":10.5,"ca":420},
+    {"at":"2026-11-17","alk":10.05,"ca":420}
+  ]
+  },
   "params": [
     {"k":"po4","n":"PO4","u":"ppm","v":0.18,"prev":0.20,"at":"2026-11-18T09:00:00+02:00","lo":0.03,"hi":0.1,"yl":0.02,"yh":0.2,"d":2,"rt":2},
     {"k":"no3","n":"NO3","u":"ppm","v":2,"prev":2,"at":"2026-11-18T10:10:00+02:00","lo":2,"hi":5,"yl":1,"yh":10,"d":1,"rt":2},
