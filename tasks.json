@@ -98,10 +98,10 @@
     },
     {
       "id": "fan",
-      "title": "Fit hygger fan to sump (STC cooling)",
+      "title": "Test the fans on the STC",
       "kind": "once",
-      "due": "2026-11-18",
-      "note": "before the 30–32 °C days Thu/Fri"
+      "due": "2026-11-20",
+      "note": "wired 19 Nov · set F1 to 24.5 → fans start? → back to 25.5"
     },
     {
       "id": "uv",
