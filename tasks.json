@@ -105,10 +105,10 @@
     },
     {
       "id": "uv",
-      "title": "Decide on UV Stage 1",
+      "title": "Lights Stage 2 (add white)",
       "kind": "once",
-      "due": "2026-11-20",
-      "note": "only if corals OK with new flow, NO3 ≥ 2, brown film not spreading"
+      "due": "2026-11-29",
+      "note": "Stage 1 set 25 Nov · only if corals open normally at peak · morning A5, peak A10"
     },
     {
       "id": "carbon",
