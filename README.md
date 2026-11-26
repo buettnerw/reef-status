@@ -27,3 +27,4 @@ Data: `series` (recent tests, filled by `sync_series.py`) and `dose.kno3` (last 
 
 ## 3D flow model
 - `flow/index.html` – 3D display with flow model: Now, Step 1 (Nero 5 or ReefWave 25), Step 2; return straight vs 45° elbow. Live at https://buettnerw.github.io/reef-status/flow/
+- `sphere/index.html` – 3D Reef Health Sphere (spinning globe, all tests since 19 Oct). Live at https://buettnerw.github.io/reef-status/sphere/
