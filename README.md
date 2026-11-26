@@ -24,3 +24,6 @@ Updating (for Claude): add new jobs to `tasks.json`, delete finished `once` jobs
 - `LockWidget.js` – lock screen: rectangular summary, inline line, or circular gauge (Parameter: no3, po4, alk, ca, mg, temp).
 
 Data: `series` (recent tests, filled by `sync_series.py`) and `dose.kno3` (last dose) in latest.json.
+
+## 3D flow model
+- `flow/index.html` – 3D display with flow model: Now, Step 1 (Nero 5 or ReefWave 25), Step 2; return straight vs 45° elbow. Live at https://buettnerw.github.io/reef-status/flow/

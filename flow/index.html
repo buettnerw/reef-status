@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Reef Display 3D</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#eef3f3; --surface:#ffffff; --ink:#13282c; --muted:#5b7074; --line:#d3dddf;
+  --accent:#0d6f7a; --guess:#a8620b; --scene:#dfe6e6;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0c1719; --surface:#132226; --ink:#e3eeef; --muted:#93a8ab; --line:#26393d;
+  --accent:#4fc0cb; --guess:#f0b35c; --scene:#101c1f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0c1719; --surface:#132226; --ink:#e3eeef; --muted:#93a8ab; --line:#26393d;
+  --accent:#4fc0cb; --guess:#f0b35c; --scene:#101c1f; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body);
+  padding-top:max(16px,env(safe-area-inset-top,0px));padding-bottom:max(40px,env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+main{max-width:1100px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{font-family:var(--display);font-weight:600;font-size:2rem;margin:0;line-height:1.05;text-wrap:balance}
+.sub{color:var(--muted);margin:2px 0 0;font-size:.9rem}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button{font:500 .85rem var(--body);padding:7px 14px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.spacer{flex:1}
+#view{position:relative;width:100%;aspect-ratio:16/9;max-height:72vh;min-height:320px;border-radius:10px;overflow:hidden;background:var(--scene);border:1px solid var(--line);touch-action:none}
+#view canvas{display:block;width:100%;height:100%}
+#labels{position:absolute;inset:0;pointer-events:none}
+.lbl{position:absolute;transform:translate(-50%,-120%);font:500 11.5px var(--body);background:var(--surface);color:var(--ink);border:1px solid var(--line);padding:2px 7px;border-radius:999px;white-space:nowrap}
+.lbl.guess{border-color:var(--guess);color:var(--guess)}
+.lbl.dim{transform:translate(-50%,-50%);background:#c2346a;border-color:#c2346a;color:#fff;font-variant-numeric:tabular-nums}
+.hint{position:absolute;left:10px;bottom:8px;font-size:.75rem;color:#e8efef;text-shadow:0 1px 2px #0008;pointer-events:none}
+[hidden]{display:none!important}
+#loading{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:.9rem}
+h2{font-family:var(--display);font-weight:600;font-size:1.15rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:8px 0 0}
+table{width:100%;border-collapse:collapse;font-size:.88rem}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:baseline}
+th{color:var(--muted);font-weight:500}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.tag{font-size:.7rem;color:var(--guess);border:1px solid var(--guess);border-radius:999px;padding:0 6px;white-space:nowrap}
+.flow{display:flex;flex-direction:column;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.flow label{display:flex;align-items:center;gap:8px;font-size:.88rem;color:var(--muted)}
+.flow input[type=range]{width:min(420px,60vw);accent-color:var(--accent)}
+.flow .big{font:600 1.1rem var(--display);letter-spacing:.03em;font-variant-numeric:tabular-nums;color:var(--ink)}
+.flow select,.flow input[type=time],.flow input[type=number]{font:inherit;font-size:.85rem;padding:3px 6px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--ink)}
+.flow input[type=number]{width:64px}
+.flow details summary{cursor:pointer;font-size:.88rem;color:var(--ink)}
+.legend{display:flex;align-items:center;gap:8px;font-size:.78rem;color:var(--muted)}
+.legend{flex-wrap:wrap}.legend b{display:inline-flex;align-items:center;gap:5px;font-weight:500;color:var(--ink)}.legend b::before{content:"";width:14px;height:10px;border-radius:3px;background:var(--c)}
+.scen{display:flex;flex-direction:column;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.scen .bar button{font-size:.95rem;padding:9px 18px}
+.scen p{margin:0;font-size:.92rem;line-height:1.55}
+.cmpw{overflow-x:auto}#cmp td,#cmp th{white-space:nowrap}
+th.on,td.on{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.chip{display:inline-block;font-size:.75rem;padding:1px 8px;border-radius:999px;border:1.5px solid var(--c);color:var(--c);white-space:nowrap;font-weight:500}
+.sl{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.sl label{display:flex;align-items:center;gap:8px;font-size:.85rem;color:var(--muted)}
+.sl input[type=range]{width:min(220px,50vw);accent-color:var(--accent)}
+.sl select{font:inherit;font-size:.85rem;padding:3px 6px;border:1px solid var(--line);border-radius:5px;background:var(--bg);color:var(--ink)}
+.lbl.pump{background:#0d6f7a;border-color:#0d6f7a;color:#fff}
+#err{color:var(--guess);font-size:.9rem}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Reef Display 3D</h1>
+    <p class="sub">Display tank only, 2400 × 650 × 430 mm. Rockwork, corals and equipment placed from your tape-measured front photos and top-down photos. Orange labels are my guesses.</p>
+  </header>
+  <section class="scen" aria-label="Pump set-ups">
+    <div class="bar" role="group" aria-label="Set-up"><button id="sc-now">Now</button><button id="sc-s1" aria-pressed="true">Step 1: add a Nero 5</button><button id="sc-s1b">Step 1: add a ReefWave 25</button><button id="sc-s2">Step 2: best from scratch</button></div>
+    <p id="sctxt"></p>
+    <div class="bar" role="group" aria-label="Return"><span class="sub" style="margin:0">Return outlet:</span><button id="rt-straight">Straight (as now)</button><button id="rt-elbow" aria-pressed="true">45° elbow, down-front</button>
+      <span class="spacer"></span><button id="t-onlyret" aria-pressed="false">Show only return water</button></div>
+    <p class="sub" style="margin:0"><b style="color:#e83cc8">Pink dots and streaks</b> are water that has just come out of the return, fading as it travels. Watch where they go with each outlet.</p>
+  </section>
+  <div class="bar" role="group" aria-label="Camera views">
+    <button id="v-front" aria-pressed="true">Front</button>
+    <button id="v-top">Top down</button>
+    <button id="v-left">Left end</button>
+    <button id="v-right">Right end</button>
+    <button id="v-low">Diver's eye</button>
+    <button id="v-clad">Return close-up</button><button id="v-slice">Side cut</button>
+    <span class="spacer"></span>
+    <button id="t-flow" aria-pressed="true">Flow</button>
+    <button id="t-coral" aria-pressed="true">Corals</button>
+    <button id="t-lights" aria-pressed="false">Light fixtures</button>
+    <button id="t-dim" aria-pressed="false">Measurements</button>
+    <button id="t-lbl" aria-pressed="false">Labels</button>
+  </div>
+  <div id="view"><div id="loading">Building rockwork…</div><div id="labels"></div><div class="hint">Drag to rotate · scroll or pinch to zoom · right-drag to pan</div></div>
+  <p id="err" hidden></p>
+  <section class="flow" id="flowpanel" aria-label="Flow model">
+    <div class="bar"><label>Time of day <input type="range" id="tslider" min="0" max="1439" step="5"></label><span class="big" id="tlabel"></span><button id="t-now">Now</button><button id="t-play" aria-pressed="false">Play 24 h</button></div>
+    <p class="sub" id="progline" style="margin:0"></p>
+    <div class="bar"><label>Return pump flow <input type="range" id="qslider" min="500" max="6000" step="250" value="2500"></label><span id="qlabel"></span><span class="tag">guess</span><span class="spacer"></span><span class="sub" id="slowstat" style="margin:0"></span></div>
+    <div class="legend"><b style="--c:#7a5a8c">still &lt;3 cm/s</b><b style="--c:#2a62d8">gentle 3–8</b><b style="--c:#1f9a5a">good 8–20</b><b style="--c:#c79a10">strong 20–35</b><b style="--c:#e0601f">very strong 35+</b><b style="--c:#e83cc8">return water</b></div>
+    <div class="sl"><label>Colour sheet <select id="smode"><option value="h">Flat, at one height</option><option value="v">Upright, at one depth</option><option value="b">Both</option><option value="o">Off</option></select></label>
+      <label>Height <input type="range" id="hslider" min="10" max="330" step="10" value="20"></label><span class="sub" id="hlab" style="margin:0"></span>
+      <label>Depth <input type="range" id="zslider" min="40" max="610" step="10" value="300"></label><span class="sub" id="zlab" style="margin:0"></span></div>
+    <p class="sub" style="margin:0">Streaks show where the water goes right now; the colour sheet shows the <b>average</b> speed for the program at the chosen time. Purple patches are still water, where film and detritus settle. Brown on the sheet is inside rock.</p>
+    <div class="cmpw"><table id="cmp"></table></div>
+    <details><summary>ReefWave 45 schedule (your settings since 17 Nov; start times approximate, edit to match)</summary>
+      <table style="margin-top:6px"><thead><tr><th>From</th><th>Mode</th><th>Max %</th><th>Direction</th><th></th></tr></thead><tbody id="sched"></tbody></table>
+      <div class="bar" style="margin-top:6px"><button id="addrow">Add program</button><button id="resetsched">Reset to your 17 Nov settings</button></div>
+    </details>
+  </section>
+  <h2>Flow at each coral</h2>
+  <p class="sub" style="margin:0">Average speed about 3 cm above each coral. Most of your LPS and soft corals like <b>gentle to good</b> (3–20 cm/s): enough to sway, not to blast.</p>
+  <div class="cmpw"><table><thead><tr><th>#</th><th>Coral</th><th>Now</th><th>Step 1 · Nero 5</th><th>Step 1 · RW25</th><th>Step 2</th></tr></thead><tbody id="coraltable"></tbody></table></div>
+  <p class="sub">Indicative model, not a real fluid simulation: jets, walls and rocks are simplified. Use it to compare set-ups, not as exact speeds. Pump flows: ReefWave 45 15,000 L/h, ReefWave 25 7,500 L/h, AI Nero 5 about 11,300 L/h.</p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/utils/BufferGeometryUtils.js"></script>
+<script>
+(function(){
+const errEl=document.getElementById("err");
+if(!window.THREE||!THREE.OrbitControls||!THREE.BufferGeometryUtils){errEl.hidden=false;errEl.textContent="The 3D library didn't load. Reload the page to try again.";document.getElementById("loading").hidden=true;return}
+const view=document.getElementById("view"),labelsEl=document.getElementById("labels");
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const S=0.01; // 1 unit = 100 mm
+
+/* ---------- Tank, in mm. x along length (0 = left end), y up from tank floor, z depth (0 = front glass) ---------- */
+const T={L:2400,D:650,H:430,water:400,sand:50,glass:12};
+
+/* ---------- Noise ---------- */
+function makeNoise(seed){
+  const perm=[...Array(256).keys()];let s=seed;const r=()=>{s=(s*9301+49297)%233280;return s/233280};
+  for(let i=255;i>0;i--){const j=Math.floor(r()*(i+1));[perm[i],perm[j]]=[perm[j],perm[i]]}
+  const p=new Uint8Array(512);for(let i=0;i<512;i++)p[i]=perm[i&255];
+  const fade=t=>t*t*t*(t*(t*6-15)+10),lerp=(a,b,t)=>a+t*(b-a);
+  const grad=(h,x,y,z)=>{const u=h<8?x:y,v=h<4?y:(h===12||h===14?x:z);return((h&1)?-u:u)+((h&2)?-v:v)};
+  return(x,y,z)=>{
+    const fx=Math.floor(x),fy=Math.floor(y),fz=Math.floor(z);
+    const X=fx&255,Y=fy&255,Z=fz&255;x-=fx;y-=fy;z-=fz;
+    const u=fade(x),v=fade(y),w=fade(z);
+    const A=p[X]+Y,AA=p[A]+Z,AB=p[A+1]+Z,B=p[X+1]+Y,BA=p[B]+Z,BB=p[B+1]+Z;
+    return lerp(lerp(lerp(grad(p[AA]&15,x,y,z),grad(p[BA]&15,x-1,y,z),u),lerp(grad(p[AB]&15,x,y-1,z),grad(p[BB]&15,x-1,y-1,z),u),v),
+                lerp(lerp(grad(p[AA+1]&15,x,y,z-1),grad(p[BA+1]&15,x-1,y,z-1),u),lerp(grad(p[AB+1]&15,x,y-1,z-1),grad(p[BB+1]&15,x-1,y-1,z-1),u),v),w)}}
+const N=makeNoise(1234);
+function fbm(x,y,z,o){let a=.5,f=1,s=0;for(let i=0;i<o;i++){s+=a*N(x*f,y*f,z*f);f*=2.03;a*=.5}return s}
+function ridged(x,y,z,o){let a=.5,f=1,s=0;for(let i=0;i<o;i++){const n=1-Math.abs(N(x*f,y*f,z*f));s+=a*n*n;f*=2.1;a*=.5}return s}
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),smooth=(a,b,v)=>{const t=clamp((v-a)/(b-a),0,1);return t*t*(3-2*t)};
+function mixc(c,d,t){c[0]+=(d[0]-c[0])*t;c[1]+=(d[1]-c[1])*t;c[2]+=(d[2]-c[2])*t}
+
+/* ---------- Scene ---------- */
+const scene=new THREE.Scene();
+const renderer=new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+view.prepend(renderer.domElement);
+const cam=new THREE.PerspectiveCamera(38,1,0.1,300);
+const ctl=new THREE.OrbitControls(cam,renderer.domElement);
+ctl.enableDamping=true;ctl.dampingFactor=.08;ctl.minDistance=1.5;ctl.maxDistance=60;
+
+scene.add(new THREE.HemisphereLight(0xe6f2ff,0x4a4432,.5));
+const sun=new THREE.DirectionalLight(0xfff7ea,.85);
+sun.position.set(11,24,8);sun.target.position.set(12,0,3.25);scene.add(sun,sun.target);
+sun.castShadow=true;sun.shadow.mapSize.set(2048,2048);
+Object.assign(sun.shadow.camera,{left:-14,right:14,top:7,bottom:-7,near:5,far:45});
+sun.shadow.bias=-0.0004;sun.shadow.normalBias=0.03;
+const blue=new THREE.PointLight(0x6d7cff,.35,22);blue.position.set(12,8,3.2);scene.add(blue);
+
+/* Everything tank-related lives in a mirrored group so the front view reads left to right like the real tank */
+const world=new THREE.Group();world.scale.x=-1;world.position.x=T.L*S;scene.add(world);
+const M=(c,o={})=>new THREE.MeshStandardMaterial(Object.assign({color:c,roughness:.75,metalness:.02},o));
+function place(m,x,y,z){m.position.set(x*S,y*S,z*S);world.add(m);return m}
+function box(w,h,d,mat,x,y,z){const m=new THREE.Mesh(new THREE.BoxGeometry(w*S,h*S,d*S),mat);return place(m,x+w/2,y+h/2,z+d/2)}
+
+/* Floor */
+const floor=new THREE.Mesh(new THREE.PlaneGeometry(80,50),M(0xd8d2c6,{roughness:.9}));
+floor.rotation.x=-Math.PI/2;floor.position.set(12,-0.002,3);floor.receiveShadow=true;scene.add(floor);
+box(T.L+40,30,T.D+40,M(0x3a2c24,{roughness:.6}),-20,-30,-20); // top of the cabinet the tank sits on
+
+/* Sand: speckled procedural texture */
+function sandTexture(){
+  const c=document.createElement("canvas");c.width=1024;c.height=1024;const g=c.getContext("2d");
+  g.fillStyle="#d7cca6";g.fillRect(0,0,1024,1024);
+  let a=7;const r=()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+  const cols=["#8a7a55","#5b4d33","#efe8d4","#b5a77d","#c9bd94","#3f3a2a","#f7f3e6","#9a8f6a"];
+  for(let i=0;i<90000;i++){g.fillStyle=cols[Math.floor(r()*cols.length)];const z=r()*2.6+.8;g.fillRect(r()*1024,r()*1024,z,z)}
+  const t=new THREE.CanvasTexture(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.anisotropy=8;return t}
+const sandTex=sandTexture();sandTex.repeat.set(6,1.6);
+const sandGeo=new THREE.PlaneGeometry((T.L-2*T.glass)*S,(T.D-2*T.glass)*S,160,44);
+{const p=sandGeo.attributes.position;for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i);p.setZ(i,(fbm(x*.6,y*.6,3.1,3)*14+fbm(x*3,y*3,8,2)*3)*S)}sandGeo.computeVertexNormals()}
+const sand=new THREE.Mesh(sandGeo,M(0xcdc2a2,{map:sandTex,roughness:1}));
+sand.rotation.x=-Math.PI/2;sand.position.set(T.L/2*S,T.sand*S,T.D/2*S);sand.receiveShadow=true;world.add(sand);
+const sandSide=sandTex.clone();sandSide.needsUpdate=true;sandSide.repeat.set(12,.25);
+box(T.L-2*T.glass,T.sand,T.D-2*T.glass,M(0xcdc2a2,{map:sandSide,roughness:1}),T.glass,0,T.glass).receiveShadow=true;
+
+/* Glass panes; back pane painted black */
+const glassMat=M(0xcfeee8,{transparent:true,opacity:.07,roughness:.05,metalness:.1,depthWrite:false});
+const edgeMat=new THREE.LineBasicMaterial({color:0x7fbfb2,transparent:true,opacity:.8});
+function pane(w,h,d,x,y,z,mat){const g=new THREE.BoxGeometry(w*S,h*S,d*S);const m=new THREE.Mesh(g,mat);place(m,x+w/2,y+h/2,z+d/2);
+  const e=new THREE.LineSegments(new THREE.EdgesGeometry(g),edgeMat);e.position.copy(m.position);world.add(e);return m}
+pane(T.L,T.H,T.glass,0,0,0,glassMat);                                        // front
+pane(T.L,T.H,T.glass,0,0,T.D-T.glass,M(0x0b0e0f,{roughness:.35})).receiveShadow=true; // back, painted black
+pane(T.glass,T.H,T.D-2*T.glass,0,0,T.glass,glassMat);                         // left end
+pane(T.glass,T.H,T.D-2*T.glass,T.L-T.glass,0,T.glass,glassMat);               // right end
+pane(T.L,T.glass,T.D,0,-T.glass,0,M(0x1a2a28,{roughness:.3}));                // bottom
+
+/* Water volume and moving surface */
+box(T.L-2*T.glass,T.water-T.sand,T.D-2*T.glass,M(0x3d93b8,{transparent:true,opacity:.07,depthWrite:false}),T.glass,T.sand,T.glass);
+const surfGeo=new THREE.PlaneGeometry((T.L-2*T.glass)*S,(T.D-2*T.glass)*S,120,32);
+const surf=new THREE.Mesh(surfGeo,M(0xbfeaff,{transparent:true,opacity:.22,roughness:.08,metalness:.25,side:THREE.DoubleSide,depthWrite:false}));
+surf.rotation.x=-Math.PI/2;surf.position.set(T.L/2*S,T.water*S,T.D/2*S);world.add(surf);
+const surfBase=Float32Array.from(surfGeo.attributes.position.array);
+
+/* ---------- Rock ---------- */
+const PALE={dark:[.5,.44,.34],olive:[.84,.74,.58],gold:[.86,.68,.46],green:[.76,.72,.52],purple:[.8,.72,.6],white:[.95,.93,.88],red:[.82,.66,.56]};
+const ROCK={dark:[.13,.12,.07],olive:[.33,.31,.15],gold:[.55,.5,.2],green:[.42,.46,.16],purple:[.34,.2,.38],white:[.72,.69,.6],red:[.42,.16,.12]};
+function rockGeo(w,h,d,seed,opt={}){
+  const P=opt.pale?PALE:ROCK;
+  const detail=Math.max(w,h,d)>240?44:30; // r147: faces = 20*(detail+1)^2
+  let g=new THREE.IcosahedronGeometry(1,detail);g.deleteAttribute("normal");g.deleteAttribute("uv");
+  g=THREE.BufferGeometryUtils.mergeVertices(g);
+  const p=g.attributes.position,n=p.count,disp=new Float32Array(n),Q=[];
+  const o=seed*13.71,k=1/170;
+  for(let i=0;i<n;i++){
+    const nx=p.getX(i),ny=p.getY(i),nz=p.getZ(i);
+    const qx=nx*w*k+o,qy=ny*h*k+o*.7,qz=nz*d*k-o*.3;
+    let dsp=.38*fbm(qx*.5,qy*.5,qz*.5,3)          // lumpy mass
+          +.26*(ridged(qx*1.25,qy*1.25,qz*1.25,4)-.42) // ledges and crags
+          +.11*fbm(qx*3.2,qy*3.2,qz*3.2,3)          // crusty texture
+          +.025*N(qx*9,qy*9,qz*9);                  // grain
+    dsp-=smooth(.12,.42,N(qx*2+50,qy*2,qz*2))*.32;  // pockets and holes
+    dsp-=smooth(.18,.42,N(qx*4.6+90,qy*4.6,qz*4.6))*.1; // small pores
+    const r=Math.max(.35,.84+dsp);
+    let x=nx*r*w/2,y=ny*r*h/2,z=nz*r*d/2;
+    const yb=-h/2*.78;if(y<yb)y=yb+(y-yb)*.12;     // settle flat on the sand
+    p.setXYZ(i,x*S,y*S,z*S);disp[i]=dsp;Q.push(qx,qy,qz);
+  }
+  g.computeVertexNormals();
+  const nr=g.attributes.normal,col=new Float32Array(n*3);
+  for(let i=0;i<n;i++){
+    const qx=Q[i*3],qy=Q[i*3+1],qz=Q[i*3+2],up=nr.getY(i);
+    const c=P.dark.slice();
+    const exposure=smooth(-.35,.3,disp[i]);
+    mixc(c,P.olive,exposure);
+    mixc(c,N(qx*1.7+11,qy*1.7,qz*1.7)>0?P.gold:P.green,Math.max(0,up)*.55*exposure);
+    const cor=N(qx*1.4+200,qy*1.4,qz*1.4);
+    if(cor>.26&&up<.6)mixc(c,opt.red?P.red:P.purple,smooth(.26,.42,cor)*.75);
+    const wh=N(qx*3.3+300,qy*3.3,qz*3.3);
+    if(wh>.38)mixc(c,P.white,smooth(.38,.5,wh)*.8*exposure);
+    const v=.82+.36*(fbm(qx*5,qy*5,qz*5,2)+.5);
+    col[i*3]=c[0]*v;col[i*3+1]=c[1]*v;col[i*3+2]=c[2]*v;
+  }
+  g.setAttribute("color",new THREE.BufferAttribute(col,3));
+  return g;
+}
+const rockMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.97,metalness:0});
+/* [x centre, z centre from front glass, width, height, depth, seed, lift above sand, tilt, red, turn, pale] in mm */
+const ROCKS=[
+ [380,300,340,220,280,3,0],[400,330,300,120,260,7,170],[360,380,190,110,180,11,250,0,0,.4],[480,330,160,80,150,5,230,0,0,-.3],[560,330,100,160,160,13,0], // left pile 210-580, reaches surface
+ [330,480,220,140,150,89,0],                                  // back-left rock
+ [670,300,120,100,150,17,0],[625,300,150,45,150,19,85],       // small dark rock + ledge carrying two frags
+ [790,280,240,110,160,23,60,-.15],[950,260,200,100,170,29,0], // orange arch onto mossy base
+ [870,540,210,170,170,101,0],                                 // back rock with pink tips, end of the branch arch
+ [840,410,300,45,60,31,120,.12,0,-1.35],                      // Y-branch arm: ridge to back rock
+ [960,440,300,40,55,103,110,-.1,0,.75],                       // Y-branch arm: back rock to purple rock
+ [1130,270,280,130,180,37,85,0,1],[1205,290,110,120,140,43,0], // red encrusted rock, pillar
+ [1400,300,400,110,150,47,135,.06],                           // green plank 1200-1600
+ [1665,290,190,150,180,53,0],[1660,290,130,150,140,59,145],   // tall pillar 1570-1765
+ [1840,320,320,70,110,61,200,-.12],[1805,270,170,70,120,67,50,.1], // arches to the right pile
+ [2030,300,380,180,280,71,0],[2090,300,210,120,200,73,130],   // right pile 1840-2220
+ [2010,440,160,200,140,97,0],                                 // tall back rock of the right pile
+ [1940,150,200,70,90,79,0],[2135,140,140,100,130,83,0]        // low front rocks
+];
+const rockMeshes=[];
+function buildRocks(){
+  ROCKS.forEach(([x,z,w,h,d,seed,lift,tilt,red,turn,pale])=>{
+    const m=new THREE.Mesh(rockGeo(w,h,d,seed,{red,pale}),rockMat);
+    m.castShadow=m.receiveShadow=true;
+    m.rotation.y=turn||(seed%7-3)*.08;if(tilt)m.rotation.z=tilt;
+    place(m,x,T.sand+lift+h*.39-8,z);rockMeshes.push(m);
+  });
+}
+
+/* ---------- Return cladding (from close-up photos) ----------
+   A mound ~280 x 230 mm sitting on the left pile and breaking the surface by ~60 mm:
+   big pale porous chunk on the front, tan branching rubble piled on top glued with white putty,
+   two dead Fungia skeletons on top and a larger one on the side, a thin white plate skeleton on the
+   back-left. The left end of the T is fully enclosed; the right outlet sits in a recess and pours onto a small ledge. */
+function buildCladding(){
+  const g=new THREE.Group();g.position.set(380*S,T.water*S,380*S);world.add(g);
+  const at=(m,x,y,z,rx=0,ry=0,rz=0)=>{m.position.set(x*S,y*S,z*S);m.rotation.set(rx,ry,rz);m.castShadow=m.receiveShadow=true;g.add(m);return m};
+  let sd=5;const r=()=>{sd=(sd*9301+49297)%233280;return sd/233280};
+  // big pale porous chunk, front side
+  at(new THREE.Mesh(rockGeo(190,120,130,151,{pale:1}),rockMat),-15,15,-70,0,.3,.1);
+  // second pale chunk, back right
+  at(new THREE.Mesh(rockGeo(140,90,110,153,{pale:1}),rockMat),45,10,55,0,-.5,0);
+  // tan branching rubble on top
+  const tan=M(0xd2ab7c,{roughness:.95});
+  for(let i=0;i<13;i++){
+    const len=60+r()*70,th=20+r()*14;
+    const m=new THREE.Mesh(rockGeo(len,th,th,170+i,{pale:1}),rockMat);
+    m.material=rockMat;
+    const a=r()*Math.PI*2,d=Math.sqrt(r())*85;at(m,Math.cos(a)*d+10,55+r()*40-d*.25,Math.sin(a)*d*.85-5,(r()-.5)*.8,r()*Math.PI,(r()-.5)*.8);
+  }
+  // left end of the T fully enclosed in rock (stopper hidden)
+  at(new THREE.Mesh(rockGeo(120,100,130,157,{pale:1}),rockMat),-75,5,10,0,.8,0);
+  // rock roof and cheeks around the right outlet: the opening sits in a recess, visible only head-on
+  at(new THREE.Mesh(rockGeo(130,60,120,159,{pale:1}),rockMat),55,42,0,0,.2,.05);
+  at(new THREE.Mesh(rockGeo(90,70,60,161,{pale:1}),rockMat),70,5,-60,0,-.3,0);
+  at(new THREE.Mesh(rockGeo(90,70,60,163,{pale:1}),rockMat),70,5,60,0,.4,0);
+  // small flat ledge the outlet pours onto
+  at(new THREE.Mesh(rockGeo(130,26,100,165,{pale:1}),rockMat),125,-28,0,0,.1,-.08);
+}
+
+/* ---------- Corals ---------- */
+const corals=new THREE.Group();world.add(corals);
+function noisyGeo(geo,amp,freq,seed,colFn){
+  geo.deleteAttribute("normal");if(geo.attributes.uv)geo.deleteAttribute("uv");
+  const g=THREE.BufferGeometryUtils.mergeVertices(geo),p=g.attributes.position,col=new Float32Array(p.count*3);
+  for(let i=0;i<p.count;i++){const v=new THREE.Vector3().fromBufferAttribute(p,i),l=v.length()||1,n=v.clone().divideScalar(l);
+    const f=amp(n,v,seed);v.addScaledVector(n,f);p.setXYZ(i,v.x,v.y,v.z);
+    const c=colFn(n,f,v);col[i*3]=c[0];col[i*3+1]=c[1];col[i*3+2]=c[2]}
+  g.computeVertexNormals();g.setAttribute("color",new THREE.BufferAttribute(col,3));return g}
+const vMat=o=>new THREE.MeshStandardMaterial(Object.assign({vertexColors:true,roughness:.8},o||{}));
+const hex=h=>[(h>>16&255)/255,(h>>8&255)/255,(h&255)/255];
+function grp(){const g=new THREE.Group();g.traverse(o=>{});return g}
+function add(g,mesh){mesh.castShadow=true;mesh.receiveShadow=true;g.add(mesh);return mesh}
+
+function blob(r,color,seed=1,rough=.3){
+  const base=hex(color);
+  return new THREE.Mesh(noisyGeo(new THREE.IcosahedronGeometry(r*S,14),(n)=>N(n.x*2.5+seed,n.y*2.5,n.z*2.5)*r*S*rough,0,seed,
+    (n,f)=>{const t=.75+.5*(N(n.x*6+seed,n.y*6,n.z*6)+.5);return[base[0]*t,base[1]*t,base[2]*t]}),vMat())}
+function plug(color,frag){
+  const g=grp();
+  add(g,new THREE.Mesh(new THREE.CylinderGeometry(15*S,13*S,10*S,20),M(color,{roughness:.9}))).position.y=5*S;
+  if(frag){const b=add(g,blob(13,frag,7,.5));b.position.y=16*S;b.scale.y=.8}
+  return g}
+function polyps(n,spread,stalk,head,col,seed=3,tip){
+  const g=grp();let s=seed;const r=()=>{s=(s*9301+49297)%233280;return s/233280};
+  const sm=M(col,{roughness:.7}),tm=M(tip||col,{roughness:.6,emissive:tip||col,emissiveIntensity:.08});
+  for(let i=0;i<n;i++){const a=r()*Math.PI*2,d=Math.sqrt(r())*spread,x=Math.cos(a)*d,z=Math.sin(a)*d,h=stalk*(.6+r()*.7);
+    const st=add(g,new THREE.Mesh(new THREE.CylinderGeometry(head*.35*S,head*.45*S,h*S,7),sm));st.position.set(x*S,h/2*S,z*S);
+    const t=add(g,new THREE.Mesh(new THREE.CylinderGeometry(head*S,head*.6*S,head*.45*S,12),tm));t.position.set(x*S,(h+head*.2)*S,z*S)}
+  return g}
+function onTile(w,d,fn,dx=0){const g=grp();const t=add(g,new THREE.Mesh(new THREE.BoxGeometry(w*S,12*S,d*S),M(0x9a948a,{roughness:1})));t.position.y=6*S;const c=fn();c.position.set(dx*S,12*S,0);g.add(c);return g}
+function onPlug(col,r,fn){const g=grp();add(g,new THREE.Mesh(new THREE.CylinderGeometry(r*S,(r-2)*S,12*S,24),M(col,{roughness:.9}))).position.y=6*S;const c=fn();c.position.y=12*S;g.add(c);return g}
+/* stalk with a head of short tentacles (Duncan) or sausage bubbles (hammer/bubble tip) */
+function stalkHead(h,r,tip,bubble){const g=grp();let s=h*7+r;const rr=()=>{s=(s*9301+49297)%233280;return s/233280};
+  add(g,new THREE.Mesh(new THREE.CylinderGeometry(r*.45*S,r*.35*S,h*S,12),M(0x8a8478,{roughness:.8}))).position.y=h/2*S;
+  const tm=M(0x5a7a8a,{roughness:.6}),tp=M(tip,{emissive:tip,emissiveIntensity:.35,roughness:.5});const n=bubble?26:40;
+  for(let i=0;i<n;i++){const a=rr()*Math.PI*2,d=Math.sqrt(rr())*r,len=bubble?r*.35:r*.5;
+    const m=add(g,new THREE.Mesh(bubble?new THREE.CapsuleGeometry(r*.12*S,len*S,4,8):new THREE.CylinderGeometry(r*.06*S,r*.07*S,len*S,6),bubble?tp:tm));
+    m.position.set(Math.cos(a)*d*S,(h+len*.4+(r-d)*.25)*S,Math.sin(a)*d*S);m.rotation.set(Math.sin(a)*d/r*.9,0,-Math.cos(a)*d/r*.9);
+    if(!bubble){const b=add(g,new THREE.Mesh(new THREE.SphereGeometry(r*.09*S,8,6),tp));b.position.copy(m.position);b.position.y+=len*.5*S;b.position.x+=Math.cos(a)*d/r*len*.4*S;b.position.z+=Math.sin(a)*d/r*len*.4*S}}
+  return g}
+function branchy(tip){const g=grp();let s=5;const rr=()=>{s=(s*9301+49297)%233280;return s/233280};const bm=M(0x4a5a7a,{roughness:.7}),tp=M(tip,{emissive:tip,emissiveIntensity:.4});
+  for(let i=0;i<9;i++){const a=rr()*6.28,d=rr()*12,h=18+rr()*18,b=add(g,new THREE.Mesh(new THREE.CylinderGeometry(2*S,3*S,h*S,6),bm));b.position.set(Math.cos(a)*d*S,h/2*S,Math.sin(a)*d*S);b.rotation.set((rr()-.5)*.7,0,(rr()-.5)*.7);
+    for(let k=0;k<5;k++){const t=add(g,new THREE.Mesh(new THREE.SphereGeometry(2.2*S,6,5),tp));t.position.set(b.position.x+(rr()-.5)*10*S,(h+rr()*6)*S,b.position.z+(rr()-.5)*10*S)}}
+  return g}
+function tile(col,polypCol,n){
+  const g=grp();const tl=add(g,new THREE.Mesh(new THREE.BoxGeometry(70*S,12*S,70*S),M(0x9fb33a,{roughness:1})));tl.position.y=6*S;tl.rotation.y=.4;
+  const p=polyps(n,16,26,8,polypCol,n*7,0xb7a6d8);p.position.y=12*S;g.add(p);return g}
+function dome(r,color,seed){
+  const base=hex(color),dark=base.map(v=>v*.45);
+  const geo=new THREE.SphereGeometry(r*S,56,28,0,Math.PI*2,0,Math.PI/2);
+  const m=new THREE.Mesh(noisyGeo(geo,(n,v)=>{const c=Math.abs(N(n.x*9+seed,n.y*9,n.z*9));return(c<.08?-.05:0)*r*S+N(n.x*2+seed,n.y*2,n.z*2)*r*S*.15},0,seed,
+    (n)=>{const c=Math.abs(N(n.x*9+seed,n.y*9,n.z*9));return c<.08?dark:base}),vMat());
+  m.scale.y=.7;return m}
+function brain(r,color,seed){
+  const base=hex(color),valley=hex(0x6a5a3a);
+  const geo=new THREE.SphereGeometry(r*S,72,36,0,Math.PI*2,0,Math.PI/2);
+  const rid=n=>Math.sin(N(n.x*2.2+seed,n.y*2.2,n.z*2.2)*26);
+  const m=new THREE.Mesh(noisyGeo(geo,(n)=>rid(n)*r*S*.06+N(n.x*1.5,n.y*1.5+seed,n.z*1.5)*r*S*.18,0,seed,
+    (n)=>{const t=(rid(n)+1)/2;return[valley[0]+(base[0]-valley[0])*t,valley[1]+(base[1]-valley[1])*t,valley[2]+(base[2]-valley[2])*t]}),vMat());
+  m.scale.y=.55;return m}
+function mound(r,seed){ // dark rounded colony with pale flecks
+  const dark=hex(0x2f3218),fleck=hex(0xcfc9b4);
+  const m=new THREE.Mesh(noisyGeo(new THREE.SphereGeometry(r*S,64,24,0,Math.PI*2,0,Math.PI/2),(n)=>N(n.x*3+seed,n.y*3,n.z*3)*r*S*.12,0,seed,
+    (n)=>N(n.x*22+seed,n.y*22,n.z*22)>.32?fleck:dark.map(v=>v*(.8+.4*(N(n.x*8,n.y*8,n.z*8)+.5)))),vMat());
+  m.scale.y=.28;return m}
+function skeleton(){
+  const g=grp(),mat=M(0xe8e4d8,{roughness:.9});let s=11;const r=()=>{s=(s*9301+49297)%233280;return s/233280};
+  for(let i=0;i<9;i++){const h=30+r()*35,b=add(g,new THREE.Mesh(new THREE.CylinderGeometry(4*S,7*S,h*S,6),mat));
+    b.position.set((r()-.5)*45*S,h/2*S,(r()-.5)*35*S);b.rotation.set((r()-.5)*.9,0,(r()-.5)*.9)}
+  return g}
+
+/* Corals: x = mm from left end, y = mm above sand, z = mm from front glass */
+const CR=[
+ {id:"C4",x:590,y:135,z:290,t:"Duncan-type on stone tile",on:"Ledge beside the left pile",make:()=>onTile(90,55,()=>stalkHead(45,24,0x2fe0c8,0))},
+ {id:"C5",x:665,y:135,z:290,t:"Duncan-type on stone tile (larger)",on:"Ledge beside the left pile",make:()=>onTile(100,60,()=>stalkHead(60,32,0x2fe0c8,0))},
+ {id:"C6",x:880,y:165,z:520,t:"Pink frags",on:"Back rock at the end of the branch arch",make:()=>blob(9,0xe86aa8,5,.5)},
+ {id:"C7",x:1010,y:70,z:185,t:"Small chalice/brain frag",on:"Lower left face of the red pitted rock",face:1,make:()=>{const b=blob(22,0x8a4a7a,9,.25);b.scale.y=.45;return b}},
+ {id:"C9",x:1240,y:245,z:290,t:"Green-tipped branching soft coral on white plug",on:"Top of the long slab, left end",make:()=>onPlug(0xf2efe6,22,()=>branchy(0x3bd8a0))},
+ {id:"C10",x:580,y:0,z:110,t:"Dark honeycomb dome",on:"Sand",make:()=>dome(36,0x3a3020,2)},
+ {id:"C11",x:750,y:0,z:95,t:"Lobed open brain",on:"Sand (Lobophyllia?)",make:()=>brain(50,0xc9b07c,4)},
+ {id:"C12",x:1005,y:0,z:90,t:"Dark plug",on:"Sand",make:()=>plug(0x2a2a26,0)},
+ {id:"C12b",x:1060,y:0,z:110,t:"Duncan-type on white plug",on:"Sand",make:()=>onPlug(0xe8e6de,20,()=>stalkHead(40,16,0x2fe0c8,0))},
+ {id:"C13",x:1170,y:0,z:100,t:"Fuzzy long-tentacle colony",on:"Sand",make:()=>{const g=grp();const b=add(g,blob(28,0x5a5a66,8,.35));b.scale.y=.6;b.position.y=10*S;const p=polyps(34,26,16,4,0x7c8aa0,6,0xc8f0e0);p.position.y=14*S;g.add(p);return g}},
+ {id:"C14",x:1430,y:0,z:90,t:"Large dark encrusting mat",on:"Sand under the long slab",make:()=>mound(78,6)},
+ {id:"C15",x:1545,y:0,z:85,t:"Small rock with tube worms",on:"Sand",make:()=>blob(22,0x3a3a40,9,.6)},
+ {id:"C16",x:1635,y:0,z:85,t:"Small green frag on round dish",on:"Sand",make:()=>onPlug(0x6a6a6a,45,()=>stalkHead(10,10,0x6af0a0,1))},
+ {id:"C17",x:1750,y:0,z:85,t:"Two hammer/bubble-tip heads on square tile",on:"Sand",make:()=>{const g=onTile(110,90,()=>stalkHead(30,30,0xc9e8a0,1),-25);const h=stalkHead(34,32,0xc9e8a0,1);h.position.set(25*S,12*S,0);g.add(h);return g}},
+ {id:"C18",x:1840,y:0,z:90,t:"Hammer/bubble-tip head on dark plug",on:"Sand",make:()=>onPlug(0x1d1f22,20,()=>stalkHead(36,26,0xc9e8a0,1))}
+];
+const coralLbl=[];
+function buildCorals(){
+  scene.updateMatrixWorld(true);const ray=new THREE.Raycaster();
+  CR.forEach(c=>{const o=c.make();if(c.face)o.rotation.x=-Math.PI/2;
+    o.traverse(m=>{if(m.isMesh){m.castShadow=true;m.receiveShadow=true}});
+    let pos=new THREE.Vector3(c.x*S,(T.sand+c.y)*S,c.z*S);
+    if(c.y>0){ // snap onto the rock: from the front for face corals, from above otherwise
+      const from=c.face?new THREE.Vector3(pos.x,pos.y,-1):new THREE.Vector3(pos.x,(T.H+200)*S,pos.z);
+      ray.set(world.localToWorld(from),c.face?new THREE.Vector3(0,0,1):new THREE.Vector3(0,-1,0));
+      const hit=ray.intersectObjects(rockMeshes,false)[0];
+      if(hit){pos=world.worldToLocal(hit.point.clone());if(c.face)pos.z-=4*S;else pos.y-=4*S}}
+    o.position.copy(pos);corals.add(o);
+    coralLbl.push({p:[pos.x/S,pos.y/S+45,pos.z/S],t:c.id+" "+c.t,g:1,coral:1})});
+}
+
+/* ---------- Equipment ---------- */
+const dkM=M(0x1e2225,{roughness:.5});
+/* ReefWave 45 on the left end glass, front half, ~250 mm up */
+/* Red Sea ReefWave 45: twin cross-flow pump lying along the left end glass (from top-down photo) */
+const rw=new THREE.Group();
+{const grille=M(0x2b2420,{roughness:.6});
+ [-1,1].forEach(sd=>{const c=new THREE.Mesh(new THREE.CylinderGeometry(26*S,26*S,150*S,20,1,true),grille);c.rotation.x=Math.PI/2;c.position.z=sd*105*S;rw.add(c);
+   for(let i=0;i<9;i++){const r=new THREE.Mesh(new THREE.TorusGeometry(27*S,3*S,6,20),dkM);r.position.z=(sd*105-70+i*17.5)*S;rw.add(r)}
+   const cap=new THREE.Mesh(new THREE.CylinderGeometry(30*S,30*S,14*S,20),dkM);cap.rotation.x=Math.PI/2;cap.position.z=sd*185*S;rw.add(cap)});
+ const mot=new THREE.Mesh(new THREE.CylinderGeometry(32*S,32*S,60*S,20),dkM);mot.rotation.x=Math.PI/2;rw.add(mot);
+ [-95,95].forEach(z=>{const m=new THREE.Mesh(new THREE.BoxGeometry(30*S,40*S,36*S),dkM);m.position.set(-28*S,0,z*S);rw.add(m)})}
+rw.position.set(48*S,(T.sand+200)*S,270*S);
+/* Return (mostly hidden inside the pale rock cladding): blue pipe rises through the left pile to a grey PVC T-piece at the water line.
+   Left branch (towards the ReefWave) is plugged with a stopper; right branch is the open outlet. */
+const retOut=new THREE.Group();
+{const pv=M(0x8a9196,{roughness:.5}),blueM=M(0x2a4fb0,{roughness:.45}),stop=M(0xc8487e,{roughness:.6}),hole=M(0x050607,{roughness:1});
+ const TY=T.water, rise=TY-T.sand-22;
+ const up=new THREE.Mesh(new THREE.CylinderGeometry(16*S,16*S,rise*S,16),blueM);up.position.y=(-22-rise/2)*S;retOut.add(up);
+ const sock=new THREE.Mesh(new THREE.CylinderGeometry(21*S,21*S,40*S,18),pv);sock.position.y=-22*S;retOut.add(sock);
+ const run=new THREE.Mesh(new THREE.CylinderGeometry(21*S,21*S,110*S,18),pv);run.rotation.z=Math.PI/2;retOut.add(run);
+ const plug=new THREE.Mesh(new THREE.CylinderGeometry(23*S,23*S,14*S,18),stop);plug.rotation.z=Math.PI/2;plug.position.x=-62*S;retOut.add(plug);
+ const lip=new THREE.Mesh(new THREE.CylinderGeometry(23*S,23*S,22*S,18,1,true),pv);lip.rotation.z=Math.PI/2;lip.position.x=63*S;retOut.add(lip);
+ const dark=new THREE.Mesh(new THREE.CircleGeometry(16*S,18),hole);dark.rotation.y=Math.PI/2;dark.position.x=66*S;retOut.add(dark)}
+retOut.position.set(380*S,T.water*S,380*S);world.add(retOut);
+/* ARKA magnetic frag rack on the back glass near the water line (position approximate) */
+const rack=new THREE.Group();
+{rack.add(new THREE.Mesh(new THREE.BoxGeometry(260*S,22*S,60*S),M(0x111314,{roughness:.4})));
+ for(let i=0;i<8;i++){const h=new THREE.Mesh(new THREE.CylinderGeometry(11*S,11*S,24*S,14),M(0x9fb6c9,{roughness:.3,emissive:0x2a3a60,emissiveIntensity:.4}));h.position.set((-105+i*30)*S,0,8*S);rack.add(h)}
+ const back=new THREE.Mesh(new THREE.BoxGeometry(230*S,50*S,12*S),M(0x111314));back.position.set(0,-20*S,30*S);rack.add(back)}
+rack.position.set(1880*S,(T.water-30)*S,(T.D-T.glass-42)*S);world.add(rack);rw.traverse(o=>{if(o.isMesh)o.castShadow=true});world.add(rw);
+/* Cleaning magnet parked on the left glass near the back */
+const lMag=box(28,60,70,M(0xcfe0de,{roughness:.6}),T.glass,T.H-120,470);
+/* Slim overflow along the right end glass, perspex comb on top */
+const OV_X=2330;
+const ovf=box(6,T.H-80,T.D-2*T.glass,M(0x0d1011,{roughness:.4}),OV_X,0,T.glass);
+const perspex=M(0xdff4f6,{transparent:true,opacity:.4,roughness:.1,depthWrite:false});
+box(6,20,T.D-2*T.glass,perspex,OV_X,T.H-80,T.glass);
+for(let z=T.glass;z<T.D-T.glass-12;z+=20)box(6,40,12,perspex,OV_X,T.H-60,z);
+const stuckMag=box(36,70,90,M(0x5a6064),OV_X+12,T.H-130,470);
+/* Light fixtures: 2 x Qmaven II Q6-120 at 380 mm above the water (hidden by default for a clear view) */
+const lightFix=new THREE.Group();world.add(lightFix);
+[50,1210].forEach(x=>{const b=new THREE.Mesh(new THREE.BoxGeometry(1140*S,30*S,260*S),M(0x1a1d20,{metalness:.3,roughness:.4}));
+  b.position.set((x+570)*S,(T.water+395)*S,T.D/2*S);lightFix.add(b);
+  const e=new THREE.Mesh(new THREE.BoxGeometry(1100*S,3*S,220*S),M(0xdfe6ff,{emissive:0x9aa8ff,emissiveIntensity:1}));
+  e.position.set((x+570)*S,(T.water+379)*S,T.D/2*S);lightFix.add(e)});
+lightFix.visible=false;
+
+/* ---------- Measurements ---------- */
+const dims=new THREE.Group();world.add(dims);dims.visible=false;const dimLbl=[];
+const dimMat=new THREE.LineBasicMaterial({color:0xc2346a,depthTest:false,transparent:true});
+function dim(a,b,t,tick){const A=new THREE.Vector3(...a).multiplyScalar(S),B=new THREE.Vector3(...b).multiplyScalar(S),k=new THREE.Vector3(...tick).multiplyScalar(40*S);
+  const ln=new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints([A,B,A.clone().sub(k),A.clone().add(k),B.clone().sub(k),B.clone().add(k)]),dimMat);ln.renderOrder=10;dims.add(ln);
+  dimLbl.push({p:a.map((v,i)=>(v+b[i])/2),t,dim:1})}
+dim([0,T.H+60,-50],[T.L,T.H+60,-50],"2400 mm",[0,1,0]);
+dim([-60,0,-50],[-60,T.H,-50],"430",[1,0,0]);
+dim([-60,T.H+60,0],[-60,T.H+60,T.D],"650",[0,1,0]);
+dim([T.L+60,T.sand,-50],[T.L+60,T.water,-50],"≈350 water over sand",[1,0,0]);
+dim([210,T.sand+20,-30],[580,T.sand+20,-30],"left pile 370",[0,1,0]);
+dim([1840,T.sand+20,-30],[2220,T.sand+20,-30],"right pile 380",[0,1,0]);
+dim([T.L+40,T.sand+5,120],[T.L+40,T.sand+5,440],"rock ridge 120–440 from front",[1,0,0]);
+
+/* ---------- Labels ---------- */
+let L=[];
+function setupLabels(){
+  L=[{p:[RW25.x,RW25.y1+40,RW25.zc],t:"ReefWave 25 · upright, blowing left",pump:1,sc:["s1b"]},{o:neroAMesh.children[0],t:"Nero 5 · aimed left",pump:1,sc:["s1","s2"],dy:.6},{o:neroBMesh.children[0],t:"Nero 5 · aimed down-front",pump:1,sc:["s2"],dy:.6},{p:[ELBOW.o[0]+60,ELBOW.o[1]+60,ELBOW.o[2]-40],t:"45° elbow",pump:1,ret:"elbow"},{o:rw,t:"Red Sea ReefWave 45",g:0,pump:1,dy:.6},{o:retOut,t:"Return outlet: pours right onto a ledge",g:0,dy:1.1},{o:rack,t:"ARKA frag rack",g:1,dy:.4},{o:lMag,t:"Cleaning magnet",g:0,dy:.5},{o:ovf,t:"Slim overflow, perspex comb",g:0,dy:2.2},
+     {o:stuckMag,t:"Stuck magnet",g:0,dy:.6},{p:[380,T.water+30,320],t:"Rock reaches surface",g:0},...coralLbl,...dimLbl,
+     ...[0,1].map(i=>({p:[620+i*1160,T.water+430,T.D/2],t:"Qmaven II Q6-120",g:0,light:1}))];
+  L.forEach(l=>{const d=document.createElement("div");d.className="lbl"+(l.g&&!l.pump?" guess":"")+(l.dim?" dim":"")+(l.pump?" pump":"");d.textContent=l.t;labelsEl.appendChild(d);l.el=d;
+    l.v=l.p?world.localToWorld(new THREE.Vector3(...l.p.map(v=>v*S))):l.o.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0,l.dy||.45,0))});
+}
+let showLbl=false;const tmp=new THREE.Vector3();
+function placeLabels(){const w=view.clientWidth,h=view.clientHeight;
+  L.forEach(l=>{tmp.copy(l.v).project(cam);const vis=tmp.z<1&&Math.abs(tmp.x)<1.05&&Math.abs(tmp.y)<1.05;
+    l.el.hidden=!vis||(l.sc&&!l.sc.includes(SC))||(l.ret&&l.ret!==RET)||(l.pump?false:l.dim?!dims.visible:(!showLbl||(l.coral&&!corals.visible)||(l.light&&!lightFix.visible)));
+    if(vis){l.el.style.left=((tmp.x+1)/2*w)+"px";l.el.style.top=((1-tmp.y)/2*h)+"px"}})}
+
+/* ---------- Flow model (approximate, for visualising circulation; not a CFD simulation) ----------
+   ReefWave 45: cross-flow pump on the left end glass (rated 15,000 L/h), aimed at the overflow and slightly up.
+   Return: outlet at the water line on the left pile, pouring right over the ledge. Overflow: along the right end.
+   Rocks are treated as soft obstacles; water slows and deflects around them. Speeds are indicative only. */
+const DEFAULT_SCHED=[{t:"00:00",mode:"uniform",max:50,dir:"forward"},{t:"07:00",mode:"surface",max:60,dir:"forward"},
+  {t:"10:00",mode:"step",max:70,dir:"forward"},{t:"13:00",mode:"random",max:80,dir:"forward"},{t:"17:00",mode:"uniform",max:70,dir:"forward"},{t:"21:00",mode:"uniform",max:50,dir:"forward"}];
+let SCHED;try{SCHED=JSON.parse(localStorage.getItem("reefSched17nov"))}catch(e){}
+if(!Array.isArray(SCHED)||!SCHED.length)SCHED=DEFAULT_SCHED.map(o=>({...o}));
+const saveSched=()=>{try{localStorage.setItem("reefSched17nov",JSON.stringify(SCHED))}catch(e){}};
+const MODES={constant:"Constant",uniform:"Uniform wave",random:"Random wave",surface:"Surface",step:"Step"};
+const DIRS={forward:"Forward",reverse:"Reverse",alternating:"Alternating"};
+const toMin=t=>{const[h,m]=t.split(":").map(Number);return h*60+(m||0)};
+const fmt=m=>String(Math.floor(m/60)%24).padStart(2,"0")+":"+String(Math.round(m%60)).padStart(2,"0");
+function progAt(min){const s=[...SCHED].sort((a,b)=>toMin(a.t)-toMin(b.t));let p=s[s.length-1];for(const o of s)if(toMin(o.t)<=min)p=o;return p}
+function renderSched(){
+  document.getElementById("sched").innerHTML=SCHED.map((o,i)=>`<tr><td><input type="time" data-i="${i}" data-k="t" value="${o.t}"></td>
+   <td><select data-i="${i}" data-k="mode">${Object.entries(MODES).map(([k,v])=>`<option value="${k}"${k===o.mode?" selected":""}>${v}</option>`).join("")}</select></td>
+   <td><input type="number" min="0" max="100" step="5" data-i="${i}" data-k="max" value="${o.max}"></td>
+   <td><select data-i="${i}" data-k="dir">${Object.entries(DIRS).map(([k,v])=>`<option value="${k}"${k===o.dir?" selected":""}>${v}</option>`).join("")}</select></td>
+   <td><button data-del="${i}" aria-label="Remove program">✕</button></td></tr>`).join("")}
+const schedEl=document.getElementById("sched");
+schedEl.addEventListener("change",e=>{const d=e.target.dataset;if(d.i==null)return;SCHED[d.i][d.k]=d.k==="max"?Math.max(0,Math.min(100,+e.target.value||0)):e.target.value;saveSched();updateProgLine()});
+schedEl.addEventListener("click",e=>{const i=e.target.dataset.del;if(i==null||SCHED.length<2)return;SCHED.splice(+i,1);saveSched();renderSched();updateProgLine()});
+document.getElementById("addrow").onclick=()=>{SCHED.push({t:"12:00",mode:"constant",max:50,dir:"forward"});saveSched();renderSched()};
+document.getElementById("resetsched").onclick=()=>{SCHED=DEFAULT_SCHED.map(o=>({...o}));saveSched();renderSched();updateProgLine()};
+renderSched();
+
+const tslider=document.getElementById("tslider"),qslider=document.getElementById("qslider");
+let tod=(()=>{const d=new Date();return d.getHours()*60+d.getMinutes()})(),playing=false;
+tslider.value=tod;
+function updateProgLine(){const p=progAt(tod);document.getElementById("tlabel").textContent=fmt(tod);
+  document.getElementById("progline").textContent=`ReefWave 45: ${MODES[p.mode]||p.mode}, up to ${p.max}% (about ${Math.round(p.max*150).toLocaleString()} L/h), ${(DIRS[p.dir]||p.dir).toLowerCase()} · program from ${p.t}`;
+  document.getElementById("qlabel").textContent=(+qslider.value).toLocaleString()+" L/h"}
+tslider.oninput=()=>{tod=+tslider.value;updateProgLine()};
+qslider.oninput=updateProgLine;
+document.getElementById("t-now").onclick=()=>{const d=new Date();tod=d.getHours()*60+d.getMinutes();tslider.value=tod;updateProgLine()};
+document.getElementById("t-play").onclick=e=>{playing=!playing;e.currentTarget.setAttribute("aria-pressed",playing)};
+updateProgLine();
+
+/* ---------- Scenarios: what pumps are in the tank ---------- */
+const nrm=a=>{const l=Math.hypot(...a);return a.map(v=>v/l)};
+const NERO_A={o:[2190,T.sand+250,590],d:nrm([-1,-.07,-.06]),U:620,r0:45,k:420,q:11300};   // Step 1+2: back glass, right end, aimed left
+const NERO_B={o:[1150,T.sand+275,600],d:nrm([0,-.42,-1]),U:600,r0:45,k:380,q:11300};
+const RW25={sheet:1,x:2200,zc:575,y0:T.water-50-230,y1:T.water-50,U:430,q:7500}; // upright on the back glass, right end, cage turned to blow left     // Step 2: back glass, middle, aimed down-front
+const ELBOW={o:[450,T.water-38,372],d:nrm([.55,-.5,-.65]),U:520,r0:32,k:300};     // Step 1+2: 45° elbow / nozzle on the return
+const SCEN={
+ now:{name:"Now",pumps:[],elbow:false,
+   txt:"<b>Now.</b> ReefWave 45 flat on the left end glass pushing right along the tank. The return pours right along the surface. Water has to find its own way back to the left, so the back half and the sand drift slowly."},
+ s1:{name:"Step 1 · Nero 5",pumps:[NERO_A],elbow:true,
+   txt:"<b>Step 1 — keep the ReefWave 45, add one pump.</b> An <b>AI Nero 5</b> (about 11,300 L/h) on the <b>back glass at the right end</b>, about 10 cm under the surface, aimed <b>left along the back glass</b> and slightly down. Its magnet sits on the back glass, so the slim overflow is no problem. Together they make a racetrack: right along the front, back along the back. Run the Nero at 60–80% random."},
+ s1b:{name:"Step 1 · RW25",pumps:[RW25],
+   txt:"<b>Step 1, other option — Red Sea ReefWave 25</b> (7,500 L/h) standing <b>upright on the back glass at the right end</b>, top about 5 cm under the surface, cage turned so it blows <b>left along the back glass</b>. It makes a tall, gentle sheet of flow instead of a narrow jet, and runs in <b>ReefBeat with your ReefWave 45</b>, so the two can be synced. It needs <b>at least 35 cm from surface to sand</b> at that spot, or the bottom of the sheet will blow the sand. Shown here at 70%."},
+ s2:{name:"Step 2",pumps:[NERO_A,NERO_B],elbow:true,
+   txt:"<b>Step 2 — starting from nothing.</b> I would still put a cross-flow pump on the left end: the ReefWave 45 is the right pump for that spot. Then <b>two AI Nero 5s on the back glass</b>, synced in one app: one at the right end aimed left (the racetrack return) and one in the middle aimed <b>down and forward over the rock ridge</b> into the front sand gully, where the brown film sits."}
+};
+let SC="s1",RET="elbow",onlyRet=false;
+/* Pump meshes (Nero 5 style: short black body with a magnet pad on the back glass) */
+function neroMesh(J){const g=new THREE.Group(),bk=M(0x15181a,{roughness:.45});
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(36*S,32*S,95*S,24),bk);body.rotation.x=Math.PI/2;g.add(body);
+  const grill=new THREE.Mesh(new THREE.TorusGeometry(34*S,4*S,8,24),M(0x2a3a44));grill.position.z=48*S;g.add(grill);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(36*S,3*S,8,24),M(0x3fe0ff,{emissive:0x3fe0ff,emissiveIntensity:.6}));ring.position.z=-30*S;g.add(ring);
+  const cone=new THREE.Mesh(new THREE.ConeGeometry(110*S,420*S,24,1,true),new THREE.MeshBasicMaterial({color:0x3fe0ff,transparent:true,opacity:.09,depthWrite:false,side:THREE.DoubleSide}));
+  cone.rotation.x=-Math.PI/2;cone.position.z=260*S;g.add(cone);
+  g.position.set(J.o[0]*S,J.o[1]*S,J.o[2]*S);
+  g.lookAt(new THREE.Vector3((J.o[0]+J.d[0]*100)*S,(J.o[1]+J.d[1]*100)*S,(J.o[2]+J.d[2]*100)*S));
+  const pad=new THREE.Mesh(new THREE.BoxGeometry(70*S,70*S,24*S),M(0x15181a));pad.position.set(J.o[0]*S,J.o[1]*S,(T.D-T.glass-14)*S);
+  const grp=new THREE.Group();grp.add(g,pad);grp.traverse(o=>{if(o.isMesh)o.castShadow=true});world.add(grp);return grp}
+const neroAMesh=neroMesh(NERO_A),neroBMesh=neroMesh(NERO_B);
+const rw25Mesh=new THREE.Group();
+{const bk=M(0x2b2420,{roughness:.6}),dk=M(0x1e2225,{roughness:.5}),H=RW25.y1-RW25.y0;
+ const cage=new THREE.Mesh(new THREE.CylinderGeometry(24*S,24*S,H*S,20,1,true),bk);cage.position.y=(RW25.y0+H/2)*S;rw25Mesh.add(cage);
+ for(let i=0;i<8;i++){const r=new THREE.Mesh(new THREE.TorusGeometry(25*S,2.5*S,6,20),dk);r.rotation.x=Math.PI/2;r.position.y=(RW25.y0+15+i*(H-30)/7)*S;rw25Mesh.add(r)}
+ const pad=new THREE.Mesh(new THREE.BoxGeometry(60*S,90*S,22*S),dk);pad.position.set(0,(RW25.y0+H/2)*S,(T.D-T.glass-14-RW25.zc)*S);rw25Mesh.add(pad);
+ const sheet=new THREE.Mesh(new THREE.PlaneGeometry(500*S,H*S),new THREE.MeshBasicMaterial({color:0x3fe0ff,transparent:true,opacity:.08,depthWrite:false,side:THREE.DoubleSide}));
+ sheet.position.set(-270*S,(RW25.y0+H/2)*S,0);sheet.rotation.x=0;rw25Mesh.add(sheet);
+ rw25Mesh.position.set(RW25.x*S,0,RW25.zc*S);rw25Mesh.traverse(o=>{if(o.isMesh)o.castShadow=true});world.add(rw25Mesh)}
+const elbowMesh=new THREE.Group();
+{const pv=M(0x8a9196,{roughness:.5});const p=new THREE.Mesh(new THREE.CylinderGeometry(19*S,19*S,70*S,16),pv);p.rotation.x=Math.PI/2;
+ const cone=new THREE.Mesh(new THREE.ConeGeometry(70*S,300*S,20,1,true),new THREE.MeshBasicMaterial({color:0xffd23f,transparent:true,opacity:.1,depthWrite:false,side:THREE.DoubleSide}));cone.rotation.x=-Math.PI/2;cone.position.z=180*S;
+ const g=new THREE.Group();g.add(p,cone);g.position.set(ELBOW.o[0]*S,ELBOW.o[1]*S,ELBOW.o[2]*S);
+ g.lookAt(new THREE.Vector3((ELBOW.o[0]+ELBOW.d[0]*100)*S,(ELBOW.o[1]+ELBOW.d[1]*100)*S,(ELBOW.o[2]+ELBOW.d[2]*100)*S));elbowMesh.add(g)}
+world.add(elbowMesh);
+function applyScenarioMeshes(){rw25Mesh.visible=SC==="s1b";neroAMesh.visible=SC==="s1"||SC==="s2";neroBMesh.visible=SC==="s2";elbowMesh.visible=RET==="elbow"}
+
+/* Pump intensity 0..1 and direction (+1 forward / -1 reverse) at real time t (s) */
+let rnd={v:.5,target:.7,next:0};
+function pumpState(t){const p=progAt(tod),M=p.max/100;let I=M;
+  if(p.mode==="uniform")I=.1+(M-.1)*(.5+.5*Math.sin(t*Math.PI*2/10));
+  else if(p.mode==="random"){if(t>rnd.next){rnd.target=.1+Math.random()*(M-.1);rnd.next=t+2+Math.random()*4}rnd.v+=(rnd.target-rnd.v)*.04;I=rnd.v}
+  else if(p.mode==="surface")I=M*(.75+.25*Math.sin(t*.8));
+  else if(p.mode==="step")I=(Math.floor(t/8)%2)?M:M*.3;
+  let dir=1;if(p.dir==="reverse")dir=-1;else if(p.dir==="alternating")dir=(Math.floor(t/20)%2)?-1:1;
+  return{I:Math.max(0,I),dir,N:.7+.15*Math.sin(t*.7)}}
+function avgState(){const p=progAt(tod),M=p.max/100;
+  const I=p.mode==="constant"?M:p.mode==="surface"?.75*M:p.mode==="step"?.65*M:(.1+M)/2;return{I,dir:1,N:.7}}
+
+/* Obstacles: rock ellipsoids plus the return cladding */
+const OBS=ROCKS.map(([x,z,w,h,d,seed,lift])=>({x,y:T.sand+(lift||0)+h*.39-8,z,rx:w*.42,ry:h*.42,rz:d*.42}));
+OBS.push({x:380,y:T.water,z:380,rx:150,ry:95,rz:120},{x:505,y:T.water-40,z:380,rx:65,ry:16,rz:50});
+const v3=[0,0,0];
+function addJet(J,I,x,y,z){const rx=x-J.o[0],ry=y-J.o[1],rz=z-J.o[2],s=rx*J.d[0]+ry*J.d[1]+rz*J.d[2];if(s<-40)return;
+  const ss=Math.max(0,s),qx=rx-s*J.d[0],qy=ry-s*J.d[1],qz=rz-s*J.d[2],r=Math.hypot(qx,qy,qz),b=J.r0+.13*ss;
+  let g=Math.exp(-(r/b)*(r/b));if(s<0)g*=Math.exp(s/15);
+  const u=J.U*I*g/(1+ss/J.k);v3[0]+=u*J.d[0];v3[1]+=u*J.d[1];v3[2]+=u*J.d[2]}
+function addSheet(J,I,x,y,z){const s=J.x-x;if(s<-25)return;const ss=Math.max(0,s),yc=(J.y0+J.y1)/2,hy=(J.y1-J.y0)/2+ss*.07;
+  const wy=Math.exp(-Math.pow(Math.max(0,Math.abs(y-yc)-hy)/40,2)),b=35+.14*ss,wz=Math.exp(-Math.pow((z-J.zc)/b,2));
+  let u=J.U*I*wy*wz/(1+ss/650);if(s<0)u*=Math.exp(s/12);v3[0]-=u;v3[1]-=u*.03}
+function vel(x,y,z,t,st,calm){
+  v3[0]=v3[1]=v3[2]=0;const I=st.I,up=st.dir>0?.14:-.10,sc=SCEN[SC];
+  // ReefWave 45 sheet jet: wide in z, starts at the pump face and decays along the tank
+  const dx=x-60;if(dx>-20){const yc=T.sand+200+Math.max(0,dx)*up,sy=55+Math.max(0,dx)*.13,half=175+Math.max(0,dx)*.12;
+    const wz=Math.exp(-Math.pow(Math.max(0,Math.abs(z-270)-half)/90,2)),wy=Math.exp(-Math.pow((y-yc)/sy,2));
+    const sp=520*I*wz*wy/(1+Math.max(0,dx)/650);v3[0]+=sp;v3[1]+=sp*up}
+  // return: pours right along the surface (now) or through the elbow down-front (steps)
+  const q=+qslider.value/2500;
+  if(RET==="straight"){const rx=x-450;if(rx>-10){const wy=Math.exp(-Math.pow((y-(T.water-30))/(35+rx*.1),2)),wz=Math.exp(-Math.pow((z-380)/(45+rx*.18),2));
+    const sp=Math.min(650,420*q)*wy*wz/(1+Math.max(0,rx)/350);v3[0]+=sp;v3[1]-=sp*.05}}
+  else addJet(ELBOW,Math.min(1.3,q),x,y,z);
+  // added pumps
+  for(const J of sc.pumps){if(J.sheet)addSheet(J,st.N,x,y,z);else addJet(J,st.N,x,y,z)}
+  // gyre return current back towards the ReefWave intake; the Nero at the back right strengthens it along the back
+  const depth=1-(y-T.sand)/(T.water-T.sand);const loop=(90*I+18*q)*Math.max(0,depth)*Math.max(0,depth);
+  const backBoost=sc.pumps.length?1+.6*st.N*(z/T.D):1;
+  v3[0]-=loop*(x>150?1:0)*(0.6+0.4*(z/T.D))*backBoost;if(x<220)v3[1]+=loop*.8*(1-x/220);
+  // overflow pull along the right end
+  const ox=2330-x;if(ox<450&&ox>-20){const k=(45+25*q)*(1-Math.max(0,ox)/450);v3[0]+=k;v3[1]+=k*.6*(y<T.water-60?1:0)}
+  // walls turn the water: sand and glass deflect jets sideways instead of stopping them
+  let vx=v3[0],vy=v3[1],vz=v3[2];
+  const hs=y-T.sand;if(hs<55&&vy<0){const f=1-hs/55,m=-vy*f,h=Math.hypot(vx,vz)||1;vy+=m*.85;vx+=m*.6*vx/h;vz+=m*.6*vz/h}
+  if(z<70&&vz<0){const f=1-z/70,m=-vz*f;vz+=m*.9;vy-=m*.55;vx+=m*.2*Math.sign(vx||1)}
+  if(z>T.D-80&&vz>0){const f=1-(T.D-z)/80,m=vz*f;vz-=m*.9;vy+=m*.5}
+  if(x<90&&vx<0){const f=1-x/90,m=-vx*f;vx+=m*.9;vy+=m*.4}
+  // a little turbulence, scaled by pump intensity
+  if(!calm){const tu=25+60*I;vx+=tu*N(x*.004,y*.004+t*.25,z*.004);vy+=tu*.6*N(x*.004+40,y*.004,z*.004+t*.25);vz+=tu*N(x*.004+80,y*.004-t*.25,z*.004)}
+  // rocks: no flow into the rock, and water slows in their lee
+  for(let i=0;i<OBS.length;i++){const o=OBS[i];const ex=(x-o.x)/o.rx;if(ex>2||ex<-2)continue;const ey=(y-o.y)/o.ry,ez=(z-o.z)/o.rz,qd=ex*ex+ey*ey+ez*ez;
+    if(qd<2.6){const nx=ex/o.rx,ny=ey/o.ry,nz=ez/o.rz,nl=Math.hypot(nx,ny,nz)||1,dot=(vx*nx+vy*ny+vz*nz)/nl;
+      if(dot<0){vx-=dot*nx/nl;vy-=dot*ny/nl;vz-=dot*nz/nl}
+      const damp=.25+.75*Math.min(1,Math.max(0,(qd-1)/1.6));vx*=damp;vy*=damp;vz*=damp}}
+  v3[0]=vx;v3[1]=vy;v3[2]=vz;return v3}
+window._flow={trace:(x,y,z,n)=>{const st={I:.6,dir:1,N:.7},out=[];for(let k=0;k<n;k++){const v=vel(x,y,z,0,st,true);x+=v[0]*.05;y+=v[1]*.05;z+=v[2]*.05;if(k%20==0)out.push([Math.round(x),Math.round(y-T.sand),Math.round(z)])}return out},set:(r,sc)=>{RET=r;SC=sc},E:ELBOW};
+function insideRock(x,y,z){for(const o of OBS){const ex=(x-o.x)/o.rx,ey=(y-o.y)/o.ry,ez=(z-o.z)/o.rz;if(ex*ex+ey*ey+ez*ez<1)return true}return false}
+function speedAt(x,y,z,st){const v=vel(x,y,z,0,st,true);return Math.hypot(v[0],v[1],v[2])}
+
+/* Particles drawn as short streaks (tail points back along the flow) */
+const NP=2400,pAge=new Float32Array(2400),pPos=new Float32Array(NP*6),pCol=new Float32Array(NP*6),pLife=new Float32Array(NP),pMM=new Float32Array(NP*3);
+const NT=450;
+function spawn(i){let x,y,z,tries=0;const sc=SCEN[SC];
+  if(i<NT){if(RET==="straight"){x=462+Math.random()*30;y=T.water-45+Math.random()*25;z=362+Math.random()*36}
+    else{x=ELBOW.o[0]+ELBOW.d[0]*35+(Math.random()-.5)*24;y=ELBOW.o[1]+ELBOW.d[1]*35+(Math.random()-.5)*24;z=ELBOW.o[2]+ELBOW.d[2]*35+(Math.random()-.5)*24}
+    pMM[i*3]=x;pMM[i*3+1]=y;pMM[i*3+2]=z;pLife[i]=10+Math.random()*12;pAge[i]=0;return}
+  do{const r=Math.random();
+    if(r<.25){x=70+Math.random()*60;y=T.sand+150+Math.random()*110;z=90+Math.random()*360}
+    else if(r<.33){x=460+Math.random()*40;y=T.water-55+Math.random()*40;z=350+Math.random()*60}
+    else if(r<.45&&sc.pumps.length){const J=sc.pumps[Math.floor(Math.random()*sc.pumps.length)];if(J.sheet){x=J.x-40-Math.random()*40;y=J.y0+Math.random()*(J.y1-J.y0);z=J.zc+(Math.random()-.5)*60}else{x=J.o[0]+J.d[0]*60+(Math.random()-.5)*60;y=J.o[1]+(Math.random()-.5)*60;z=J.o[2]+J.d[2]*60+(Math.random()-.5)*60}}
+    else{x=20+Math.random()*(T.L-40);y=T.sand+8+Math.random()*(T.water-T.sand-14);z=20+Math.random()*(T.D-40)}
+  }while(insideRock(x,y,z)&&++tries<12);
+  pMM[i*3]=x;pMM[i*3+1]=y;pMM[i*3+2]=z;pLife[i]=5+Math.random()*10}
+for(let i=0;i<NP;i++){spawn(i);pLife[i]*=Math.random()}
+const pGeo=new THREE.BufferGeometry();pGeo.setAttribute("position",new THREE.BufferAttribute(pPos,3));pGeo.setAttribute("color",new THREE.BufferAttribute(pCol,3));
+const flowPts=new THREE.LineSegments(pGeo,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:.95,depthWrite:false}));
+flowPts.renderOrder=5;flowPts.frustumCulled=false;world.add(flowPts);
+/* return-water tracers: pink dots with a pink tail, so the return jet stands out */
+const hPos=new Float32Array(NT*3),hCol=new Float32Array(NT*3),hGeo=new THREE.BufferGeometry();
+hGeo.setAttribute("position",new THREE.BufferAttribute(hPos,3));hGeo.setAttribute("color",new THREE.BufferAttribute(hCol,3));
+const dotTex=(()=>{const c=document.createElement("canvas");c.width=c.height=32;const g=c.getContext("2d");const gr=g.createRadialGradient(16,16,0,16,16,16);gr.addColorStop(0,"rgba(255,255,255,1)");gr.addColorStop(.5,"rgba(255,255,255,.6)");gr.addColorStop(1,"rgba(255,255,255,0)");g.fillStyle=gr;g.fillRect(0,0,32,32);return new THREE.CanvasTexture(c)})();
+const retDots=new THREE.Points(hGeo,new THREE.PointsMaterial({size:.24,map:dotTex,vertexColors:true,transparent:true,depthWrite:false}));retDots.renderOrder=6;retDots.frustumCulled=false;world.add(retDots);
+/* speed colour bands, in mm/s: still < 30, gentle 30–80, good 80–200, strong 200–350, very strong > 350 */
+const BANDS=[[0,[.45,.32,.55]],[30,[.15,.38,.85]],[80,[.15,.78,.45]],[200,[1,.82,.2]],[350,[1,.45,.15]],[600,[1,.95,.9]]];
+function bandCol(sp,out,i,k){let a=BANDS[0],b=BANDS[1];for(let n=0;n<BANDS.length-1;n++){if(sp>=BANDS[n][0]){a=BANDS[n];b=BANDS[n+1]}}
+  const f=Math.min(1,Math.max(0,(sp-a[0])/(b[0]-a[0])));const t=f<.75?0:(f-.75)/.25*.5;
+  out[i]=(a[1][0]+(b[1][0]-a[1][0])*t)*k;out[i+1]=(a[1][1]+(b[1][1]-a[1][1])*t)*k;out[i+2]=(a[1][2]+(b[1][2]-a[1][2])*t)*k}
+let flowT=0,slowAcc=0,slowN=0,lastStat=0;
+function flowStep(dt){if(!flowPts.visible)return;dt=Math.min(dt,.05);flowT+=dt;
+  if(playing){tod=(tod+dt*12)%1440;tslider.value=Math.floor(tod);updateProgLine()}
+  const st=pumpState(flowT);let slow=0;
+  for(let i=0;i<NP;i++){const j=i*3,j6=i*6;let x=pMM[j],y=pMM[j+1],z=pMM[j+2];
+    const v=vel(x,y,z,flowT,st);x+=v[0]*dt;y+=v[1]*dt;z+=v[2]*dt;const sp=Math.hypot(v[0],v[1],v[2]);if(sp<30)slow++;
+    pLife[i]-=dt;pAge[i]+=dt;
+    if(pLife[i]<=0||x<15||x>2325||z<15||z>T.D-15||y<T.sand+4||y>T.water-2||((i>=NT||pAge[i]>2.5)&&insideRock(x,y,z)))spawn(i);
+    else{pMM[j]=x;pMM[j+1]=y;pMM[j+2]=z}
+    const tl=Math.min(.22,60/(sp+1e-3))*1, L=Math.min(70,sp*.16)+6, f=L/(sp+1e-3);
+    pPos[j6]=pMM[j]*S;pPos[j6+1]=pMM[j+1]*S;pPos[j6+2]=pMM[j+2]*S;
+    pPos[j6+3]=(pMM[j]-v[0]*f)*S;pPos[j6+4]=(pMM[j+1]-v[1]*f)*S;pPos[j6+5]=(pMM[j+2]-v[2]*f)*S;
+    if(i<NT){const f=Math.max(.35,1-pAge[i]/18);pCol[j6]=1*f;pCol[j6+1]=.2*f;pCol[j6+2]=.85*f;pCol[j6+3]=.5*f;pCol[j6+4]=.1*f;pCol[j6+5]=.45*f;
+      hPos[j]=pPos[j6];hPos[j+1]=pPos[j6+1];hPos[j+2]=pPos[j6+2];hCol[j]=pCol[j6];hCol[j+1]=pCol[j6+1];hCol[j+2]=pCol[j6+2]}
+    else if(onlyRet){pPos[j6+3]=pPos[j6];pPos[j6+4]=pPos[j6+1];pPos[j6+5]=pPos[j6+2];pCol.fill(0,j6,j6+6)}
+    else{bandCol(sp,pCol,j6,1);bandCol(sp,pCol,j6+3,.15)}}
+  hGeo.attributes.position.needsUpdate=true;hGeo.attributes.color.needsUpdate=true;
+  pGeo.attributes.position.needsUpdate=true;pGeo.attributes.color.needsUpdate=true;
+  slowAcc+=slow/NP;slowN++;
+  if(flowT-lastStat>1.5){document.getElementById("slowstat").textContent=`Still water right now: about ${Math.round(100*slowAcc/slowN)}%`;slowAcc=slowN=0;lastStat=flowT}}
+
+/* ---------- Speed slices: coloured sheets that show average flow at one height or one depth ---------- */
+const IW=T.L-2*T.glass,ID=T.D-2*T.glass,WH=T.water-T.sand;
+const HX=160,HZ=44,VX=160,VY=32;
+const hData=new Uint8Array(HX*HZ*4),vData=new Uint8Array(VX*VY*4);
+const hTex=new THREE.DataTexture(hData,HX,HZ,THREE.RGBAFormat),vTex=new THREE.DataTexture(vData,VX,VY,THREE.RGBAFormat);
+[hTex,vTex].forEach(t=>{t.magFilter=t.minFilter=THREE.LinearFilter;t.needsUpdate=true});
+const sliceMat=tex=>new THREE.MeshBasicMaterial({map:tex,transparent:true,depthWrite:false,side:THREE.DoubleSide});
+const hSlice=new THREE.Mesh(new THREE.PlaneGeometry(IW*S,ID*S),sliceMat(hTex));hSlice.rotation.x=-Math.PI/2;hSlice.renderOrder=4;world.add(hSlice);
+const vSlice=new THREE.Mesh(new THREE.PlaneGeometry(IW*S,WH*S),sliceMat(vTex));vSlice.renderOrder=4;world.add(vSlice);
+const tmpc=[0,0,0];
+function fillCell(data,k,sp,inRock){if(inRock){data[k]=70;data[k+1]=55;data[k+2]=40;data[k+3]=150;return}
+  bandCol(sp,tmpc,0,1);data[k]=tmpc[0]*255;data[k+1]=tmpc[1]*255;data[k+2]=tmpc[2]*255;data[k+3]=sp<30?215:175}
+let sliceH=20,sliceZ=300,sliceMode="h";
+function computeSlices(){const st=avgState();
+  const y=T.sand+sliceH;hSlice.position.set(T.L/2*S,y*S,T.D/2*S);
+  for(let j=0;j<HZ;j++){const z=T.glass+ID*(1-(j+.5)/HZ);for(let i=0;i<HX;i++){const x=T.glass+IW*(i+.5)/HX,k=(j*HX+i)*4;fillCell(hData,k,speedAt(x,y,z,st),insideRock(x,y,z))}}
+  hTex.needsUpdate=true;
+  vSlice.position.set(T.L/2*S,(T.sand+WH/2)*S,sliceZ*S);
+  for(let j=0;j<VY;j++){const yy=T.sand+WH*(j+.5)/VY;for(let i=0;i<VX;i++){const x=T.glass+IW*(i+.5)/VX,k=(j*VX+i)*4;fillCell(vData,k,speedAt(x,yy,sliceZ,st),insideRock(x,yy,sliceZ))}}
+  vTex.needsUpdate=true;
+  hSlice.visible=flowPts.visible&&(sliceMode==="h"||sliceMode==="b");vSlice.visible=flowPts.visible&&(sliceMode==="v"||sliceMode==="b");
+  document.getElementById("hlab").textContent=sliceH<=25?`${sliceH} mm — on the sand`:`${sliceH} mm above the sand`;
+  document.getElementById("zlab").textContent=`${Math.round(sliceZ/10)} cm from the front glass`}
+
+/* ---------- Numbers: turnover, still water, still sand, flow at each coral, for all three set-ups ---------- */
+const RES={};
+function stats(){const keep=SC,st=avgState();
+  for(const k of Object.keys(SCEN)){SC=k;
+    let still=0,n=0;for(let i=0;i<40;i++)for(let j=0;j<9;j++)for(let m=0;m<12;m++){const x=40+i*58,y=T.sand+15+j*38,z=30+m*52;if(insideRock(x,y,z))continue;n++;if(speedAt(x,y,z,st)<30)still++}
+    let ss=0,sn=0;for(let i=0;i<60;i++)for(let m=0;m<16;m++){const x=30+i*39,z=25+m*38,y=T.sand+15;if(insideRock(x,y,z))continue;sn++;if(speedAt(x,y,z,st)<30)ss++}
+    const lph=15000*st.I+(+qslider.value)+SCEN[k].pumps.reduce((a,p)=>a+p.q,0)*st.N;
+    const cor=CR.map(c=>speedAt(c.x,T.sand+c.y+35,c.z,st));
+    RES[k]={still:Math.round(100*still/n),sand:Math.round(100*ss/sn),turn:(lph/850).toFixed(0),lph:Math.round(lph/100)*100,cor}}
+  SC=keep;renderStats()}
+const chip=v=>{const c=v<30?["#7a5a8c","still"]:v<80?["#2a62d8","gentle"]:v<200?["#1f9a5a","good"]:v<350?["#c79a10","strong"]:["#e0601f","very strong"];
+  return `<span class="chip" style="--c:${c[0]}">${(v/10).toFixed(0)} cm/s · ${c[1]}</span>`};
+function renderStats(){
+  document.getElementById("cmp").innerHTML=`<thead><tr><th>Return: ${RET==="elbow"?"45° elbow":"straight"}</th>${Object.keys(SCEN).map(k=>`<th class="${k===SC?"on":""}">${SCEN[k].name}</th>`).join("")}</tr></thead><tbody>
+   <tr><td>Water moved per hour</td>${Object.keys(SCEN).map(k=>`<td class="num ${k===SC?"on":""}">${RES[k].lph.toLocaleString()} L/h · ${RES[k].turn}× the tank</td>`).join("")}</tr>
+   <tr><td>Still water (under 3 cm/s)</td>${Object.keys(SCEN).map(k=>`<td class="num ${k===SC?"on":""}">${RES[k].still}%</td>`).join("")}</tr>
+   <tr><td>Still sand surface (under 3 cm/s)</td>${Object.keys(SCEN).map(k=>`<td class="num ${k===SC?"on":""}">${RES[k].sand}%</td>`).join("")}</tr></tbody>`;
+  document.getElementById("coraltable").innerHTML=CR.map((c,i)=>`<tr><td>${c.id}</td><td>${c.t}<br><span class="sub">${c.on} · ${c.x/10} cm along</span></td>${Object.keys(SCEN).map(k=>`<td class="${k===SC?"on":""}">${chip(RES[k].cor[i])}</td>`).join("")}</tr>`).join("")}
+
+/* ---------- Views and toggles ---------- */
+const views={front:[[12,3.2,-17.5],[12,2.1,3.25]],top:[[12,24,3.0],[12,0,3.25]],left:[[29.5,3.6,-3.5],[18,1.8,3.3]],right:[[-5.5,3.6,-3.5],[6,1.8,3.3]],low:[[16.5,1.2,-1.6],[11.5,1.6,4]],clad:[[17.4,6.2,1.3],[20.2,4,3.8]],slice:[[12,2.3,-11],[12,2.3,3.25]]};
+function go(n){const[v,t]=views[n];cam.position.set(...v);ctl.target.set(...t);ctl.update();
+  document.querySelectorAll('[id^="v-"]').forEach(b=>b.setAttribute("aria-pressed",b.id==="v-"+n))}
+Object.keys(views).forEach(n=>document.getElementById("v-"+n).onclick=()=>go(n));
+const tog=(id,fn)=>document.getElementById(id).onclick=e=>e.currentTarget.setAttribute("aria-pressed",fn());
+tog("t-lbl",()=>showLbl=!showLbl);
+tog("t-coral",()=>corals.visible=!corals.visible);
+tog("t-lights",()=>lightFix.visible=!lightFix.visible);
+tog("t-dim",()=>dims.visible=!dims.visible);
+tog("t-flow",()=>{flowPts.visible=!flowPts.visible;retDots.visible=flowPts.visible;document.getElementById("flowpanel").hidden=!flowPts.visible;computeSlices();return flowPts.visible});
+/* set-up buttons, sliders */
+function setScen(k){SC=k;["now","s1","s1b","s2"].forEach(n=>document.getElementById("sc-"+n).setAttribute("aria-pressed",n===k));
+  document.getElementById("sctxt").innerHTML=SCEN[k].txt;applyScenarioMeshes();for(let i=0;i<NP;i+=3)spawn(i);computeSlices();if(RES.now)renderStats()}
+["now","s1","s1b","s2"].forEach(n=>document.getElementById("sc-"+n).onclick=()=>setScen(n));
+function setRet(k){RET=k;["straight","elbow"].forEach(n=>document.getElementById("rt-"+n).setAttribute("aria-pressed",n===k));applyScenarioMeshes();for(let i=0;i<NT;i++){spawn(i);pLife[i]*=Math.random()}computeSlices();stats()}
+["straight","elbow"].forEach(n=>document.getElementById("rt-"+n).onclick=()=>setRet(n));
+document.getElementById("t-onlyret").onclick=e=>{onlyRet=!onlyRet;e.currentTarget.setAttribute("aria-pressed",onlyRet)};
+let deb=0;const later=fn=>{clearTimeout(deb);deb=setTimeout(fn,180)};
+document.getElementById("smode").onchange=e=>{sliceMode=e.target.value;computeSlices()};
+document.getElementById("hslider").oninput=e=>{sliceH=+e.target.value;later(computeSlices)};
+document.getElementById("zslider").oninput=e=>{sliceZ=+e.target.value;later(computeSlices);if(sliceMode==="h"){sliceMode="b";document.getElementById("smode").value="b"}};
+let lastProg="";setInterval(()=>{const p=progAt(tod);const key=p.t+p.mode+p.max+qslider.value+JSON.stringify(SCHED);if(key!==lastProg&&RES.now!==undefined||!lastProg){lastProg=key;if(window._built){computeSlices();stats()}}},700);
+
+function theme(){scene.background=new THREE.Color(css("--scene")||"#dfe6e6")}
+theme();matchMedia("(prefers-color-scheme: dark)").addEventListener("change",theme);
+new MutationObserver(theme).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+function size(){const w=view.clientWidth,h=view.clientHeight;renderer.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()}
+new ResizeObserver(size).observe(view);size();go("front");
+
+/* Build heavy geometry after first paint */
+renderer.render(scene,cam);
+setTimeout(()=>{
+  try{world.updateMatrixWorld(true);buildRocks();buildCladding();buildCorals();setupLabels();window._built=1;setScen(SC);stats()}catch(e){errEl.hidden=false;errEl.textContent="Something went wrong building the rockwork: "+e.message}
+  document.getElementById("loading").hidden=true;
+  const clock=new THREE.Clock();
+  (function loop(){requestAnimationFrame(loop);
+    const t=clock.getElapsedTime(),a=surfGeo.attributes.position;
+    for(let i=0;i<a.count;i++){const x=surfBase[i*3],y=surfBase[i*3+1];a.array[i*3+2]=(Math.sin(x*1.7+t*1.3)*.012+Math.sin(y*2.3-t*1.1+x*.4)*.01)}
+    a.needsUpdate=true;surfGeo.computeVertexNormals();
+    const nowT=performance.now();flowStep((nowT-(window._lt||nowT))/1000);window._lt=nowT;
+    ctl.update();renderer.render(scene,cam);placeLabels()})();
+},30);
+})();
+</script>
+</body>
+</html>
