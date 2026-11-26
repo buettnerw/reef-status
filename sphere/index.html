@@ -4,10 +4,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Reef Sphere">
+<meta name="apple-mobile-web-app-title" content="Reef Planet">
 <meta name="theme-color" content="#030b14">
 <link rel="apple-touch-icon" href="icon.png">
-<title>Reef Health Sphere</title>
+<title>Reef Planet</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
@@ -28,7 +28,7 @@ h1{margin:2px 0 0;font:700 clamp(1.8rem,6vw,2.6rem)/1.05 "Space Grotesk",system-
 #labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 .lb{position:absolute;transform:translate(-50%,-50%);font:700 11px "Space Grotesk",system-ui,sans-serif;white-space:nowrap;text-align:center;line-height:1.15;text-shadow:0 0 6px currentColor,0 0 2px #000;transition:opacity .2s}
 .lb small{display:block;font:500 10px "IBM Plex Mono",monospace;opacity:.95}
-#core{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);text-align:center;pointer-events:none}
+#core{position:absolute;left:10px;top:8px;text-align:left;pointer-events:none}
 #core b{display:block;font:700 clamp(28px,8vw,46px)/1 "Space Grotesk",system-ui,sans-serif;color:#fff}
 #core span{font-size:11px;letter-spacing:.12em;text-transform:uppercase}
 #evlb{position:absolute;left:50%;bottom:6px;transform:translateX(-50%);font-size:.78rem;color:var(--pink);text-shadow:0 0 8px rgba(255,79,216,.6);white-space:nowrap;pointer-events:none}
@@ -59,8 +59,8 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--pink)}
 <div class="wrap">
  <header>
   <div class="eyebrow">850 L reef · night dive</div>
-  <h1>Reef Health Sphere</h1>
-  <p class="sub">Every test since 19 October, wrapped around a glass globe. Drag to turn it, pinch to zoom, tap a glowing line for its story.</p>
+  <h1>Reef Planet</h1>
+  <p class="sub">Every test since 19 October, grown into a little world. Healthy tests rise as glowing reef mountains above the sea; trouble sinks below it. Drag to turn, pinch to zoom, tap a mountain.</p>
  </header>
  <div class="card">
   <div id="box"><div id="labels"></div><div id="core"><b id="score">–</b><span id="mood"></span></div><div id="evlb"></div></div>
@@ -74,12 +74,13 @@ input[type=range]{flex:1;min-width:0;accent-color:var(--pink)}
  <div class="card"><div class="list" id="list"></div></div>
  <div class="card how">
   <b>How to read it.</b><br>
-  <b>Lines of longitude</b> — each glowing line running pole to pole is one test, in its test kit's colour. <b>Time runs upward:</b> 19 October sits at the south pole, today at the north pole.<br>
-  <b>Beads</b> — each dot on a line is one test result: green in target, amber drifting, red out. The better the result, the higher the bead floats above the glass.<br>
-  <b>The crown</b> — the cyan ring is the day you have selected. Spikes stand up from it, one per test: a tall green spike is a healthy reading. Short red spikes pulse and drip. A frosted white spike means that test is overdue.<br>
-  <b>Pink rings</b> — milestones: the brass valves, water changes, the PhosBond reactor, the nitrate rule, UV lights.<br>
-  <b>The polyp</b> in the middle scores the whole reef (70% average of all tests, 30% the worst one). Tentacles out and swaying when it is happy, pulled in and twitching when stressed.<br>
-  <b>Story</b> replays every day since 19 October: watch the crown climb the globe.
+  <b>Mountain ranges</b> — each test is one range, running from the <b>south pole (19 October)</b> to the <b>north pole (today)</b>. Its base glows in the test kit's colour.<br>
+  <b>Height</b> — the better the result, the higher the land. <b>The glass sea</b> sits at the "healthy" line: green reef peaks above the water are good; amber shores are drifting; red trenches sink below the sea when a test was out of range. Between two tests the land joins the readings smoothly.<br>
+  <b>Lights</b> — each small light on a ridge is a real test you did (green, amber or red).<br>
+  <b>The ring of light</b> is the day you have selected; the land north of it hasn't happened yet and lies dark under the sea. A beacon on each range shows that day's value; red beacons pulse and drip.<br>
+  <b>Pink rings</b> — milestones: water changes, the brass valves, the PhosBond reactor, the nitrate rule, carbon, UV.<br>
+  <b>The glow around the planet</b> and the score in the corner: the whole reef (70% average of all tests, 30% the worst one).<br>
+  <b>Story</b> replays every day since 19 October: watch the world rise out of the sea.
  </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
@@ -121,94 +122,115 @@ const dateStr=d=>new Date(d*DAY).toLocaleDateString("en-ZA",{day:"numeric",month
 const box=document.getElementById("box"),labelsEl=document.getElementById("labels");
 const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));
 box.prepend(renderer.domElement);
-const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(40,1,.05,50);cam.position.set(0,1.1,4.7);
-const ctl=new THREE.OrbitControls(cam,renderer.domElement);ctl.enableDamping=true;ctl.enablePan=false;ctl.minDistance=2.2;ctl.maxDistance=7;
-ctl.autoRotate=!reduce;ctl.autoRotateSpeed=.6;
-scene.add(new THREE.AmbientLight(0x6080a0,.6));const kl=new THREE.PointLight(0xffffff,1.2,10);kl.position.set(2,3,3);scene.add(kl);
-const rgba=(hex,a)=>{const n=parseInt(hex.slice(1),16);return `rgba(${n>>16},${n>>8&255},${n&255},${a})`};
+const scene=new THREE.Scene(),cam=new THREE.PerspectiveCamera(40,1,.05,50);cam.position.set(0,1.3,4.6);
+const ctl=new THREE.OrbitControls(cam,renderer.domElement);ctl.enableDamping=true;ctl.enablePan=false;ctl.minDistance=1.9;ctl.maxDistance=7;
+ctl.autoRotate=!reduce;ctl.autoRotateSpeed=.55;
+scene.add(new THREE.AmbientLight(0x3a5870,.55));
+const key=new THREE.DirectionalLight(0xbfe9ff,.8);key.position.set(3,4,4);scene.add(key);
+const rim=new THREE.DirectionalLight(0xff4fd8,.7);rim.position.set(-4,-1,-3);scene.add(rim);
+const fill=new THREE.DirectionalLight(0x3fe0ff,.45);fill.position.set(-3,2,4);scene.add(fill);
 const glowTex=(()=>{const c=document.createElement("canvas");c.width=c.height=64;const g=c.getContext("2d"),gr=g.createRadialGradient(32,32,0,32,32,32);
   gr.addColorStop(0,"rgba(255,255,255,1)");gr.addColorStop(.25,"rgba(255,255,255,.7)");gr.addColorStop(1,"rgba(255,255,255,0)");g.fillStyle=gr;g.fillRect(0,0,64,64);return new THREE.CanvasTexture(c)})();
-const R=1,N=P.length,LAT0=-1.05,LAT1=1.05;
+/* noise */
+const NZ=(()=>{const perm=[...Array(256).keys()];let s=77;const r=()=>{s=(s*9301+49297)%233280;return s/233280};
+  for(let i=255;i>0;i--){const j=Math.floor(r()*(i+1));[perm[i],perm[j]]=[perm[j],perm[i]]}const p=new Uint8Array(512);for(let i=0;i<512;i++)p[i]=perm[i&255];
+  const f=t=>t*t*t*(t*(t*6-15)+10),L=(a,b,t)=>a+t*(b-a),G=(h,x,y,z)=>{const u=h<8?x:y,v=h<4?y:(h===12||h===14?x:z);return((h&1)?-u:u)+((h&2)?-v:v)};
+  return(x,y,z)=>{const X=Math.floor(x)&255,Y=Math.floor(y)&255,Z=Math.floor(z)&255;x-=Math.floor(x);y-=Math.floor(y);z-=Math.floor(z);const u=f(x),v=f(y),w=f(z);
+    const A=p[X]+Y,AA=p[A]+Z,AB=p[A+1]+Z,B=p[X+1]+Y,BA=p[B]+Z,BB=p[B+1]+Z;
+    return L(L(L(G(p[AA]&15,x,y,z),G(p[BA]&15,x-1,y,z),u),L(G(p[AB]&15,x,y-1,z),G(p[BB]&15,x-1,y-1,z),u),v),L(L(G(p[AA+1]&15,x,y,z-1),G(p[BA+1]&15,x-1,y,z-1),u),L(G(p[AB+1]&15,x,y-1,z-1),G(p[BB+1]&15,x-1,y-1,z-1),u),v),w)}})();
+const ridged=(x,y,z)=>{let a=.5,f=1,s=0;for(let i=0;i<4;i++){const n=1-Math.abs(NZ(x*f,y*f,z*f));s+=a*n*n;f*=2.05;a*=.5}return s};
+
+const N=P.length,LAT0=-1.12,LAT1=1.12,SPAN=Math.PI*2/N;
 const latOf=day=>LAT0+(LAT1-LAT0)*(day-d0)/Math.max(1,d1-d0);
-const lonOf=i=>i/N*Math.PI*2;
-const sph=(lat,lon,r=R)=>new THREE.Vector3(r*Math.cos(lat)*Math.cos(lon),r*Math.sin(lat),r*Math.cos(lat)*Math.sin(lon));
-const globe=new THREE.Group();scene.add(globe);
+const dayAt=lat=>d0+(lat-LAT0)/(LAT1-LAT0)*(d1-d0);
+const lonOf=i=>(i+.5)*SPAN;
+const sph=(lat,lon,r=1)=>new THREE.Vector3(r*Math.cos(lat)*Math.cos(lon),r*Math.sin(lat),r*Math.cos(lat)*Math.sin(lon));
+const planet=new THREE.Group();scene.add(planet);
 
-/* marine snow around the globe */
-{const n=900,pos=new Float32Array(n*3),col=new Float32Array(n*3);for(let i=0;i<n;i++){const r=2.2+Math.random()*4,a=Math.random()*6.28,b=Math.acos(2*Math.random()-1);
-  pos.set([r*Math.sin(b)*Math.cos(a),r*Math.cos(b),r*Math.sin(b)*Math.sin(a)],i*3);const pk=Math.random()<.15;col.set(pk?[1,.31,.85]:[.55,.9,1],i*3)}
- const g=new THREE.BufferGeometry();g.setAttribute("position",new THREE.BufferAttribute(pos,3));g.setAttribute("color",new THREE.BufferAttribute(col,3));
- var snow=new THREE.Points(g,new THREE.PointsMaterial({size:.035,map:glowTex,vertexColors:true,transparent:true,opacity:.55,depthWrite:false,blending:THREE.AdditiveBlending}));scene.add(snow)}
+/* score of each test on any (fractional) day: values joined smoothly between tests */
+const STEP=4,ND=(d1-d0)*STEP+1;
+const GRID=P.map(p=>{const pts=SER[p.k].map(([t,v,gt])=>[(t+TZ)/DAY-d0,gt?Math.max(v,p.yh):v]),g=new Float32Array(ND).fill(-1);
+  for(let k=0;k<ND;k++){const x=k/STEP;if(x<pts[0][0]-.5)continue;let j=0;while(j<pts.length-1&&pts[j+1][0]<=x)j++;
+    let v=pts[j][1];if(j<pts.length-1&&x>pts[j][0]){const a=pts[j],b=pts[j+1],f=(x-a[0])/Math.max(.01,b[0]-a[0]);v=a[1]+(b[1]-a[1])*Math.min(1,f)}
+    g[k]=score(p,v,0)}return g});
+const sAt=(i,dd)=>{const k=Math.round((dd-d0)*STEP);if(k<0||k>=ND)return -1;return GRID[i][k]};
 
-/* glass shell with a fresnel rim that takes the reef's colour */
-const rimMat=new THREE.ShaderMaterial({uniforms:{c:{value:new THREE.Color(BC.g)},k:{value:1}},transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.FrontSide,
+/* the planet: one mountain range per test, running from October (south) to today (north) */
+const RES_LON=260,RES_LAT=150;
+const geo=new THREE.SphereGeometry(1,RES_LON,RES_LAT);
+const pos=geo.attributes.position,NV=pos.count,base=Float32Array.from(pos.array),col=new Float32Array(NV*3);
+geo.setAttribute("color",new THREE.BufferAttribute(col,3));
+const VI=new Int16Array(NV),VD=new Float32Array(NV),VP=new Float32Array(NV),VN=new Float32Array(NV);
+for(let v=0;v<NV;v++){const x=base[v*3],y=base[v*3+1],z=base[v*3+2],lat=Math.asin(Math.max(-1,Math.min(1,y)));let lon=Math.atan2(z,x);if(lon<0)lon+=Math.PI*2;
+  const i=Math.min(N-1,Math.floor(lon/SPAN)),u=lon/SPAN-i;VI[v]=i;VD[v]=dayAt(lat);
+  VP[v]=Math.pow(Math.sin(Math.PI*u),2)*(.55+.55*Math.max(0,.5+NZ(lat*5.5+i*7.3,u*1.7,i*3.1)))*(1-Math.pow(Math.abs(lat)/1.35,6));   // ridge profile across the range, fading at the poles
+  VN[v]=ridged(x*4.2,y*4.2,z*4.2)+.35*NZ(x*11,y*11,z*11)}
+const SEA=.70; // score at sea level: healthy land stands above the water
+const hOf=s=>s<0?-.04:(s-SEA*100)/100*.26;       // height above sea level
+const C={trench:new THREE.Color("#ff2d55"),sand:new THREE.Color("#ffb03f"),reef:new THREE.Color("#39ff9c"),peak:new THREE.Color("#7dffd0"),bed:new THREE.Color("#0b2338"),fut:new THREE.Color("#0a1a2a")};
+const kitC=P.map(p=>new THREE.Color(p.c)),tc=new THREE.Color();
+const terrainMat=new THREE.MeshStandardMaterial({vertexColors:true,roughness:.55,metalness:.05,emissive:0xffffff,emissiveIntensity:.0});
+terrainMat.onBeforeCompile=sh=>{sh.fragmentShader=sh.fragmentShader.replace("#include <emissivemap_fragment>","#include <emissivemap_fragment>\n totalEmissiveRadiance = vColor.rgb*0.22;")};
+const terrain=new THREE.Mesh(geo,terrainMat);planet.add(terrain);
+let builtFor=null;
+function buildTerrain(sel){const key=day+"|"+sel;if(key===builtFor)return;builtFor=key;
+  for(let v=0;v<NV;v++){const i=VI[v],dd=VD[v],prof=VP[v];let r,s=-1;
+    if(dd>day+.5){r=.955;tc.copy(C.fut)}
+    else{s=sAt(i,dd);const h=hOf(s);
+      const lift=s<0?0:Math.max(0,h)+.03;
+      r=1+h*prof+prof*(.012+lift*.9*(VN[v]-.25))-.04*(1-prof);
+      if(s<0)tc.copy(C.bed);
+      else{if(s<40)tc.copy(C.trench).lerp(C.sand,s/40);else if(s<75)tc.copy(C.sand).lerp(C.reef,(s-40)/35);else tc.copy(C.reef).lerp(C.peak,Math.min(1,(s-75)/25*prof*1.2));
+        tc.lerp(kitC[i],.45*(1-prof*.5));tc.multiplyScalar(.22+.42*Math.min(1,prof)+(i===sel?.1:0));
+        if(prof<.25)tc.lerp(C.bed,.6)}}
+    const k=v*3;pos.array[k]=base[k]*r;pos.array[k+1]=base[k+1]*r;pos.array[k+2]=base[k+2]*r;col[k]=tc.r;col[k+1]=tc.g;col[k+2]=tc.b}
+  pos.needsUpdate=true;geo.attributes.color.needsUpdate=true;geo.computeVertexNormals()}
+
+/* the sea: a moving glass ocean at the "healthy" line; good results rise above it as islands */
+const seaMat=new THREE.ShaderMaterial({uniforms:{t:{value:0},c:{value:new THREE.Color("#3fe0ff")}},transparent:true,depthWrite:false,
+  vertexShader:"varying vec3 vN;varying vec3 vV;varying vec3 vP;void main(){vP=position;vec4 mv=modelViewMatrix*vec4(position,1.);vN=normalize(normalMatrix*normal);vV=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}",
+  fragmentShader:"uniform float t;uniform vec3 c;varying vec3 vN;varying vec3 vV;varying vec3 vP;void main(){float f=pow(1.-abs(dot(vN,vV)),2.2);float w=.5+.5*sin(vP.x*38.+t*1.3)*sin(vP.y*34.-t*1.1)*sin(vP.z*36.+t*.9);float caus=smoothstep(.75,1.,w);gl_FragColor=vec4(c*(.25+.9*f)+caus*.12,0.22+.5*f+caus*.04);}"});
+const sea=new THREE.Mesh(new THREE.SphereGeometry(1.0,128,96),seaMat);planet.add(sea);
+/* atmosphere glow in the reef's mood colour */
+const atmoMat=new THREE.ShaderMaterial({uniforms:{c:{value:new THREE.Color("#39ff9c")}},transparent:true,depthWrite:false,blending:THREE.AdditiveBlending,side:THREE.BackSide,
   vertexShader:"varying vec3 vN;varying vec3 vV;void main(){vec4 mv=modelViewMatrix*vec4(position,1.);vN=normalize(normalMatrix*normal);vV=normalize(-mv.xyz);gl_Position=projectionMatrix*mv;}",
-  fragmentShader:"uniform vec3 c;uniform float k;varying vec3 vN;varying vec3 vV;void main(){float f=pow(1.-abs(dot(vN,vV)),2.6);gl_FragColor=vec4(c*k,f*.6);}"});
-globe.add(new THREE.Mesh(new THREE.SphereGeometry(R*1.005,96,64),rimMat));
-globe.add(new THREE.Mesh(new THREE.SphereGeometry(R,64,48),new THREE.MeshPhysicalMaterial({color:0x0d3550,transparent:true,opacity:.12,roughness:.05,metalness:0,depthWrite:false})));
-/* faint graticule */
-{const m=new THREE.LineBasicMaterial({color:0x3fe0ff,transparent:true,opacity:.07});
- for(let la=-60;la<=60;la+=30){const pts=[];for(let a=0;a<=64;a++)pts.push(sph(la*Math.PI/180,a/64*6.283,R*1.001));globe.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),m))}}
+  fragmentShader:"uniform vec3 c;varying vec3 vN;varying vec3 vV;void main(){float f=pow(1.-abs(dot(vN,vV)),1.6);gl_FragColor=vec4(c,f*.45);}"});
+const atmo=new THREE.Mesh(new THREE.SphereGeometry(1.2,64,48),atmoMat);scene.add(atmo);
 
-/* milestone rings */
-const evRings=EVENTS.map(e=>{const lat=latOf(dayOf(e.t)),pts=[];for(let a=0;a<=96;a++)pts.push(sph(lat,a/96*6.283,R*1.012));
-  const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0xff4fd8,transparent:true,opacity:.28,blending:THREE.AdditiveBlending}));globe.add(l);return{l,day:dayOf(e.t),txt:e.txt}});
+/* marine snow */
+const snowGeo=new THREE.BufferGeometry();{const n=900,p=new Float32Array(n*3),c=new Float32Array(n*3);for(let i=0;i<n;i++){const r=2.1+Math.random()*4,a=Math.random()*6.28,b=Math.acos(2*Math.random()-1);
+  p.set([r*Math.sin(b)*Math.cos(a),r*Math.cos(b),r*Math.sin(b)*Math.sin(a)],i*3);c.set(Math.random()<.15?[1,.31,.85]:[.55,.9,1],i*3)}
+ snowGeo.setAttribute("position",new THREE.BufferAttribute(p,3));snowGeo.setAttribute("color",new THREE.BufferAttribute(c,3))}
+const snow=new THREE.Points(snowGeo,new THREE.PointsMaterial({size:.035,map:glowTex,vertexColors:true,transparent:true,opacity:.55,depthWrite:false,blending:THREE.AdditiveBlending}));scene.add(snow);
 
-/* per test: meridian tube (fills with kit colour up to the chosen day), bead trail, spike */
-const SEG=120,RAD=8;
+/* milestone rings and the "today" ring of light */
+const evRings=EVENTS.map(e=>{const lat=latOf(dayOf(e.t)),pts=[];for(let a=0;a<=160;a++)pts.push(sph(lat,a/160*6.283,1.13));
+  const l=new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:0xff4fd8,transparent:true,opacity:.25,blending:THREE.AdditiveBlending,depthWrite:false}));planet.add(l);return{l,day:dayOf(e.t),txt:e.txt}});
+const crown=new THREE.Mesh(new THREE.TorusGeometry(1,.006,8,200),new THREE.MeshBasicMaterial({color:0x3fe0ff,transparent:true,opacity:.95,blending:THREE.AdditiveBlending,depthWrite:false}));crown.rotation.x=Math.PI/2;planet.add(crown);
+const crownHalo=new THREE.Mesh(new THREE.TorusGeometry(1,.03,8,200),new THREE.MeshBasicMaterial({color:0x3fe0ff,transparent:true,opacity:.18,blending:THREE.AdditiveBlending,depthWrite:false}));crownHalo.rotation.x=Math.PI/2;planet.add(crownHalo);
+
+/* test beads: a little light on the ridge where each real test was taken */
 const items=P.map((p,i)=>{const lon=lonOf(i);
-  class Mer extends THREE.Curve{getPoint(t){return sph(LAT0-.06+(LAT1-LAT0+.12)*t,lon,R*1.004)}}
-  const curve=new Mer();
-  const glass=new THREE.Mesh(new THREE.TubeGeometry(curve,SEG,.012,RAD,false),new THREE.MeshBasicMaterial({color:p.c,transparent:true,opacity:.12,depthWrite:false}));
-  const fillGeo=new THREE.TubeGeometry(curve,SEG,.0075,RAD,false);
-  const fill=new THREE.Mesh(fillGeo,new THREE.MeshBasicMaterial({color:p.c,transparent:true,opacity:.95,blending:THREE.AdditiveBlending,depthWrite:false}));
-  globe.add(glass,fill);
-  /* beads: one per test, floating higher for better results */
-  const beads=SER[p.k].map(([t,v,gt])=>{const s=score(p,v,gt),day=dayOf(t),pos=sph(latOf(day)+((t+TZ)%DAY)/DAY*.004,lon,R*(1.015+.075*s/100));
+  const beads=SER[p.k].map(([t,v,gt])=>{const s=score(p,v,gt),dd=(t+TZ)/DAY,lat=latOf(dd);
     const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:BC[band(s)],transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));
-    sp.position.copy(pos);sp.scale.setScalar(.06);sp.userData={i,day,v,gt,t,s};globe.add(sp);return sp});
-  const lineGeo=new THREE.BufferGeometry().setFromPoints(beads.map(b=>b.position));
-  const trail=new THREE.Line(lineGeo,new THREE.LineBasicMaterial({color:p.c,transparent:true,opacity:.55,blending:THREE.AdditiveBlending}));globe.add(trail);
-  /* spike */
-  const spike=new THREE.Mesh(new THREE.CylinderGeometry(.006,.016,1,10,1,true),new THREE.MeshBasicMaterial({color:BC.g,transparent:true,opacity:.9,blending:THREE.AdditiveBlending,depthWrite:false}));
-  const tip=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:BC.g,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));
-  globe.add(spike,tip);
+    sp.position.copy(sph(lat,lon,1+hOf(s)+.05));sp.scale.setScalar(.055);sp.userData={i,day:Math.floor(dd),v,gt,t,s};planet.add(sp);return sp});
+  const beacon=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:p.c,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));planet.add(beacon);
   const lb=document.createElement("div");lb.className="lb";labelsEl.appendChild(lb);
-  return{p,i,lon,fill,fillGeo,glass,beads,trail,spike,tip,lb,drops:[]}});
-
-/* "now" crown ring */
-const crown=new THREE.Line(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0x3fe0ff,transparent:true,opacity:.95,blending:THREE.AdditiveBlending}));globe.add(crown);
-const crownGlow=new THREE.Mesh(new THREE.TorusGeometry(1,.012,8,128),new THREE.MeshBasicMaterial({color:0x3fe0ff,transparent:true,opacity:.35,blending:THREE.AdditiveBlending,depthWrite:false}));crownGlow.rotation.x=Math.PI/2;globe.add(crownGlow);
-
-/* ---------- the polyp ---------- */
-const polyp=new THREE.Group();scene.add(polyp);
-const bodyMat=new THREE.MeshStandardMaterial({color:0x103040,emissive:0x39ff9c,emissiveIntensity:.35,roughness:.35,transparent:true,opacity:.92});
-const body=new THREE.Mesh(new THREE.SphereGeometry(.2,48,32),bodyMat);polyp.add(body);
-const halo=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:BC.g,transparent:true,opacity:.55,blending:THREE.AdditiveBlending,depthWrite:false}));halo.scale.setScalar(.95);polyp.add(halo);
-const NTEN=22,NSEG=9;
-const tenDirs=[];for(let k=0;k<NTEN;k++){const y=1-2*(k+.5)/NTEN,r=Math.sqrt(1-y*y),a=k*2.399963;tenDirs.push(new THREE.Vector3(r*Math.cos(a),y,r*Math.sin(a)))}
-const segMat=new THREE.MeshStandardMaterial({color:0xffffff,emissive:0x39ff9c,emissiveIntensity:.5,transparent:true,opacity:.85,roughness:.4});
-const segs=new THREE.InstancedMesh(new THREE.SphereGeometry(.018,10,8),segMat,NTEN*NSEG);polyp.add(segs);
-const tipMat=new THREE.SpriteMaterial({map:glowTex,color:BC.g,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false});
-const tips=tenDirs.map(()=>{const s=new THREE.Sprite(tipMat);s.scale.setScalar(.07);polyp.add(s);return s});
-const zN=160,zPos=new Float32Array(zN*3),zData=[];for(let i=0;i<zN;i++)zData.push({a:Math.random()*6.28,b:Math.acos(2*Math.random()-1),r:Math.cbrt(Math.random())*.17,v:(.4+Math.random()*.8)*(Math.random()<.5?1:-1)});
-const zGeo=new THREE.BufferGeometry();zGeo.setAttribute("position",new THREE.BufferAttribute(zPos,3));
-const zMat=new THREE.PointsMaterial({size:.018,map:glowTex,color:0xdcffa0,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false});polyp.add(new THREE.Points(zGeo,zMat));
-const dummy=new THREE.Object3D();
+  return{p,i,lon,beads,beacon,lb,drops:[]}});
 
 /* ---------- state ---------- */
 const slider=document.getElementById("slider");slider.min=d0;slider.max=d1;slider.value=d1;
 let day=d1,S=stateAt(day),sel=Math.max(0,P.findIndex(p=>p.k==="no3"));
-const shown=P.map(p=>S[p.k]?S[p.k].s:0);let shownOv=S.overall,crownLat=latOf(day);
+let shownOv=S.overall,crownLat=latOf(day);
 function setDay(d){day=d;slider.value=d;S=stateAt(day);renderUI()}
 function renderUI(){
   document.getElementById("day").textContent=dateStr(day)+(day===dayOf(Date.now())?" · now":"");
   const ev=EVENTS.filter(e=>dayOf(e.t)===day);document.getElementById("evlb").textContent=ev.length?"◆ "+ev.map(e=>e.txt).join(" · "):"";
   items.forEach(it=>it.beads.forEach(b=>{b.visible=b.userData.day<=day}));
-  items.forEach(it=>{const vis=it.beads.filter(b=>b.visible);it.trail.geometry.setDrawRange(0,vis.length)});
-  evRings.forEach(e=>{e.l.material.opacity=e.day<=day?(e.day===day?.9:.3):.06});
+  evRings.forEach(e=>{e.l.material.opacity=e.day<=day?(e.day===day?.95:.28):.05});
+  buildTerrain(sel);
   const p=P[sel],st=S[p.k];
-  document.getElementById("detail").innerHTML=st?`<div><h2 style="color:${p.c};text-shadow:0 0 10px ${p.c}">${p.n}</h2><div class="meta">target ${fmt(p,p.lo)}–${fmt(p,p.hi)} ${p.u} · ${p.kit}</div><div class="meta">tested ${st.age===0?"that day":st.age+" day"+(st.age>1?"s":"")+" before"}${st.frost>0?" · <span style='color:var(--amber)'>overdue, spike frosted</span>":""} · ${st.hist.length} test${st.hist.length>1?"s":""} so far</div></div><div><div class="big" style="color:${BC[band(st.s)]}">${st.gt?"&gt;":""}${fmt(p,st.v)}</div><div class="meta" style="text-align:right">score ${Math.round(st.s)}</div></div>${spark(p,st)}`
+  document.getElementById("detail").innerHTML=st?`<div><h2 style="color:${p.c};text-shadow:0 0 10px ${p.c}">${p.n}</h2><div class="meta">target ${fmt(p,p.lo)}–${fmt(p,p.hi)} ${p.u} · ${p.kit}</div><div class="meta">tested ${st.age===0?"that day":st.age+" day"+(st.age>1?"s":"")+" before"}${st.frost>0?" · <span style='color:var(--amber)'>overdue</span>":""} · ${st.hist.length} test${st.hist.length>1?"s":""} so far</div></div><div><div class="big" style="color:${BC[band(st.s)]}">${st.gt?"&gt;":""}${fmt(p,st.v)}</div><div class="meta" style="text-align:right">score ${Math.round(st.s)}</div></div>${spark(p,st)}`
     :`<div><h2>${p.n}</h2><div class="meta">not tested yet on this day</div></div>`;
   document.getElementById("list").innerHTML=P.map((q,i)=>{const s=S[q.k];return `<button type="button" data-i="${i}" class="${i===sel?"sel":""}"><span class="nm"><span class="sw" style="color:${q.c};background:${q.c}"></span>${q.n}</span><span style="color:${s?BC[band(s.s)]:"var(--muted)"}">${s?(s.gt?"&gt;":"")+fmt(q,s.v):"—"}</span></button>`}).join("")}
 function spark(p,st){const h=st.hist;if(h.length<2)return "";const W=600,H=70,vs=h.map(q=>q[2]?Math.max(q[1],p.yh):q[1]);
@@ -221,77 +243,51 @@ let playing=null;
 function stop(){if(playing){clearInterval(playing);playing=null;document.getElementById("play").textContent="▶ Story"}}
 document.getElementById("play").addEventListener("click",()=>{if(playing){stop();return}
   document.getElementById("play").textContent="❚❚ Pause";let d=day>=d1?d0:day;setDay(d);
-  playing=setInterval(()=>{d++;if(d>d1){stop();return}setDay(d)},reduce?250:650)});
-/* views */
+  playing=setInterval(()=>{d++;if(d>d1){stop();return}setDay(d)},reduce?300:700)});
 const spinBtn=document.getElementById("spin");
 spinBtn.onclick=()=>{ctl.autoRotate=!ctl.autoRotate;spinBtn.setAttribute("aria-pressed",ctl.autoRotate)};
 function camTo(x,y,z){cam.position.set(x,y,z);ctl.update()}
-document.getElementById("v-side").onclick=()=>camTo(0,1.1,4.7);
+document.getElementById("v-side").onclick=()=>camTo(0,1.3,4.6);
 document.getElementById("v-top").onclick=()=>camTo(0,4.8,.01);
 document.getElementById("v-bottom").onclick=()=>camTo(0,-4.8,.01);
-function faceSel(){const v=sph(0,lonOf(sel)).applyQuaternion(globe.quaternion);const d=cam.position.length(),y=cam.position.y;
+function faceSel(){const v=sph(0,lonOf(sel)).applyQuaternion(planet.quaternion);const d=cam.position.length(),y=cam.position.y;
   const h=Math.sqrt(Math.max(.01,d*d-y*y));cam.position.set(v.x/Math.hypot(v.x,v.z)*h,y,v.z/Math.hypot(v.x,v.z)*h);ctl.update()}
-/* tap a line or bead */
+/* tap a mountain range or a test light */
 const ray=new THREE.Raycaster(),mv=new THREE.Vector2();let downAt=null;
 renderer.domElement.addEventListener("pointerdown",e=>{downAt=[e.clientX,e.clientY]});
 renderer.domElement.addEventListener("pointerup",e=>{if(!downAt||Math.hypot(e.clientX-downAt[0],e.clientY-downAt[1])>6)return;
   const r=renderer.domElement.getBoundingClientRect();mv.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(mv,cam);
-  ray.params.Line.threshold=.03;
-  const hit=ray.intersectObjects(items.flatMap(it=>[it.glass,it.spike,...it.beads.filter(b=>b.visible)]),false)[0];
-  if(hit){const it=items.find(it=>it.glass===hit.object||it.spike===hit.object||it.beads.includes(hit.object));sel=it.i;
-    if(hit.object.userData&&hit.object.userData.day!=null){stop();setDay(hit.object.userData.day)}else renderUI()}});
+  const bh=ray.intersectObjects(items.flatMap(it=>it.beads.filter(b=>b.visible)),false)[0];
+  if(bh){sel=bh.object.userData.i;stop();setDay(bh.object.userData.day);return}
+  const th=ray.intersectObject(terrain,false)[0];if(!th)return;
+  const q=planet.worldToLocal(th.point.clone()).normalize();let lon=Math.atan2(q.z,q.x);if(lon<0)lon+=Math.PI*2;
+  sel=Math.min(N-1,Math.floor(lon/SPAN));const dd=Math.round(dayAt(Math.asin(q.y)));stop();setDay(Math.max(d0,Math.min(d1,Math.min(dd,day))))});
 
 /* ---------- loop ---------- */
 function size(){const w=box.clientWidth,h=box.clientHeight;renderer.setSize(w,h,false);cam.aspect=w/h;cam.updateProjectionMatrix()}
 new ResizeObserver(size).observe(box);size();
-const clock=new THREE.Clock(),tmp=new THREE.Vector3(),camDir=new THREE.Vector3();
+const clock=new THREE.Clock(),tmp=new THREE.Vector3(),camDir=new THREE.Vector3(),ovCol=new THREE.Color();
 renderUI();
-(function loop(){requestAnimationFrame(loop);const t=clock.getElapsedTime(),ease=reduce?1:.07;
-  /* ease towards targets */
+(function loop(){requestAnimationFrame(loop);const t=clock.getElapsedTime(),ease=reduce?1:.08;
   crownLat+=(latOf(day)-crownLat)*ease;shownOv+=(S.overall-shownOv)*ease;
-  const ovc=BC[band(shownOv)],ovCol=new THREE.Color(ovc);
-  rimMat.uniforms.c.value.lerp(ovCol,.05);
-  /* crown ring */
-  {const pts=[];for(let a=0;a<=128;a++)pts.push(sph(crownLat,a/128*6.283,R*1.008));crown.geometry.setFromPoints(pts);
-   crownGlow.position.y=Math.sin(crownLat)*R;crownGlow.scale.setScalar(Math.cos(crownLat)*R*1.01)}
-  const frac=(crownLat-(LAT0-.06))/(LAT1-LAT0+.12);
-  camDir.copy(cam.position).normalize();
-  const W=box.clientWidth,H=box.clientHeight;
-  items.forEach((it,i)=>{const st=S[it.p.k];shown[i]+=((st?st.s:0)-shown[i])*ease;const s=shown[i],b=st?band(st.s):"r",col=BC[st?b:"r"];
-    it.fillGeo.setDrawRange(0,Math.max(0,Math.floor(Math.min(1,frac)*SEG))*RAD*6);
-    it.glass.material.opacity=i===sel?.32:.12;it.trail.material.opacity=i===sel?.95:.5;
-    /* spike from the crown */
-    const base=sph(crownLat,it.lon,R*1.008),out=base.clone().normalize(),len=st?.05+.28*s/100:.02;
-    const pulse=st&&st.s<40&&!reduce?1+.25*Math.sin(t*6):1;
-    it.spike.position.copy(base).addScaledVector(out,len/2);it.spike.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),out);it.spike.scale.set(pulse*(i===sel?1.6:1),len,pulse*(i===sel?1.6:1));
-    const fr=st?st.frost:0;const sc=new THREE.Color(st?col:"#555").lerp(new THREE.Color("#e8f4ff"),fr*.8);
-    it.spike.material.color.copy(sc);it.spike.material.opacity=st?.95-.45*fr:.3;
-    it.tip.position.copy(base).addScaledVector(out,len);it.tip.material.color.copy(sc);it.tip.scale.setScalar((st?.09:.04)*pulse*(i===sel?1.5:1));it.tip.visible=!!st;
-    /* drips from red spikes */
-    if(st&&b==="r"&&!reduce&&Math.random()<.06){const d=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:it.p.c,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));
-      d.scale.setScalar(.035);d.position.copy(it.tip.position);d.userData={v:out.clone().multiplyScalar(.004),l:1};globe.add(d);it.drops.push(d)}
-    it.drops=it.drops.filter(d=>{d.userData.v.y-=.00025;d.position.add(d.userData.v);d.userData.l-=.012;d.material.opacity=d.userData.l;if(d.userData.l<=0){globe.remove(d);d.material.dispose();return false}return true});
-    /* label at the spike tip */
-    tmp.copy(it.tip.position).addScaledVector(out,.09).applyMatrix4(globe.matrixWorld);
+  const ovc=BC[band(shownOv)];ovCol.set(ovc);
+  atmoMat.uniforms.c.value.lerp(ovCol,.05);seaMat.uniforms.t.value=reduce?0:t;
+  const cr=Math.cos(crownLat)*1.09;crown.position.y=crownHalo.position.y=Math.sin(crownLat)*1.09;crown.scale.setScalar(cr);crownHalo.scale.setScalar(cr);
+  camDir.copy(cam.position).normalize();const W=box.clientWidth,H=box.clientHeight;
+  items.forEach((it,i)=>{const st=S[it.p.k],s=st?st.s:-1,b=st?band(s):"r",col=BC[b];
+    const h=1+(st?Math.max(0,hOf(s)):0)+.09;
+    it.beacon.position.copy(sph(crownLat,it.lon,h));
+    const pulse=st&&s<40&&!reduce?1+.35*Math.sin(t*6):1;
+    it.beacon.material.color.set(st?col:"#556");it.beacon.scale.setScalar((st?.13:.05)*pulse*(i===sel?1.4:1));
+    if(st&&b==="r"&&!reduce&&Math.random()<.07){const d=new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex,color:it.p.c,transparent:true,blending:THREE.AdditiveBlending,depthWrite:false}));
+      d.scale.setScalar(.04);d.position.copy(it.beacon.position);d.userData={v:it.beacon.position.clone().normalize().multiplyScalar(-.0035),l:1};planet.add(d);it.drops.push(d)}
+    it.drops=it.drops.filter(d=>{d.position.add(d.userData.v);d.userData.l-=.015;d.material.opacity=d.userData.l;if(d.userData.l<=0){planet.remove(d);d.material.dispose();return false}return true});
+    tmp.copy(it.beacon.position).multiplyScalar(1.09).applyMatrix4(planet.matrixWorld);
     const facing=tmp.clone().normalize().dot(camDir);tmp.project(cam);
-    it.lb.style.left=((tmp.x+1)/2*W)+"px";it.lb.style.top=((1-tmp.y)/2*H)+"px";
-    it.lb.style.opacity=facing>-.15?(i===sel?1:.9):.18;it.lb.style.color=it.p.c;
+    it.lb.style.left=((tmp.x+1)/2*W)+"px";it.lb.style.top=((1-tmp.y)/2*H)+"px";it.lb.style.opacity=facing>.05?(i===sel?1:.92):0;it.lb.style.color=it.p.c;
     it.lb.innerHTML=`${it.p.n}<small style="color:${st?col:"#8fb0c4"}">${st?(st.gt?">":"")+fmt(it.p,st.v):"—"}</small>`;
-    it.beads.forEach(bd=>{bd.scale.setScalar(.06*(i===sel?1.35:1)*(bd.userData.day===day?1.6:1))})});
-  /* polyp */
-  const ext=Math.max(.15,shownOv/100),stress=shownOv<40;
-  bodyMat.emissive.lerp(ovCol,.05);segMat.emissive.lerp(ovCol,.05);tipMat.color.lerp(ovCol,.05);halo.material.color.lerp(ovCol,.05);
-  body.scale.setScalar(1+.03*Math.sin(t*1.5));
-  let n=0;tenDirs.forEach((dv,k)=>{const L=(.06+.2*ext)*(1+.08*Math.sin(t*2+k));
-    const sw=reduce?0:Math.sin(t*1.3+k*.9)*.35*ext+(stress?Math.sin(t*18+k)*.08:0);
-    const side=new THREE.Vector3(-dv.z,0,dv.x).normalize();if(side.lengthSq()<.01)side.set(1,0,0);
-    for(let j=0;j<NSEG;j++){const f=(j+1)/NSEG;dummy.position.copy(dv).multiplyScalar(.19+L*f).addScaledVector(side,sw*L*f*f);dummy.scale.setScalar(1.05-.55*f);dummy.updateMatrix();segs.setMatrixAt(n++,dummy.matrix)}
-    tips[k].position.copy(dv).multiplyScalar(.19+L).addScaledVector(side,sw*L)});
-  segs.instanceMatrix.needsUpdate=true;
-  zData.forEach((z,i)=>{if(!reduce)z.a+=z.v*.01*(.3+ext);zPos[i*3]=z.r*Math.sin(z.b)*Math.cos(z.a);zPos[i*3+1]=z.r*Math.cos(z.b);zPos[i*3+2]=z.r*Math.sin(z.b)*Math.sin(z.a)});
-  zGeo.attributes.position.needsUpdate=true;zMat.opacity=.35+.5*ext;
-  polyp.rotation.y=t*.15;
-  document.getElementById("score").textContent=Math.round(shownOv);document.getElementById("score").style.textShadow=`0 0 18px ${ovc},0 0 4px #000`;
+    it.beads.forEach(bd=>{bd.scale.setScalar(.05*(i===sel?1.3:1)*(bd.userData.day===day?1.7:1))})});
+  const sc=document.getElementById("score");sc.textContent=Math.round(shownOv);sc.style.textShadow=`0 0 18px ${ovc},0 0 4px #000`;
   const mood=document.getElementById("mood");mood.textContent=shownOv>=70?"reef happy":shownOv>=40?"watch":"stressed";mood.style.color=ovc;
   if(!reduce)snow.rotation.y=t*.01;
   ctl.update();renderer.render(scene,cam)})();
