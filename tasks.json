@@ -76,10 +76,10 @@
       "id": "cu",
       "title": "Retest copper",
       "kind": "once",
-      "due": "2026-11-28",
+      "due": "2026-12-27",
       "param": "cu",
-      "after": "2026-11-20",
-      "note": "before adding shrimp/snails"
+      "after": "2026-11-27",
+      "note": "27 Nov: 0 · monthly check; also before adding shrimp/snails"
     },
     {
       "id": "siphon",
